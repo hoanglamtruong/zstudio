@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --z-saffron: #f8c662;
+  --z-ultra-violet: #595082;
+  --z-dark-purple: #2c263f;
+  --z-hunter-green: #41644a;
+  --z-dark-green: #213722;
+
+  --background: var(--z-dark-purple);
+  --foreground: var(--z-saffron);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-saffron: var(--z-saffron);
+  --color-ultra-violet: var(--z-ultra-violet);
+  --color-dark-purple: var(--z-dark-purple);
+  --color-hunter-green: var(--z-hunter-green);
+  --color-dark-green: var(--z-dark-green);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+input,
+textarea,
+select {
+  background: var(--z-dark-green);
+  color: var(--z-saffron);
+  border: 1px solid var(--z-ultra-violet);
+  border-radius: 0.375rem;
+  padding: 0.4rem 0.6rem;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button {
+  cursor: pointer;
+}

@@ -1,0 +1,138 @@
+// ZVIDEO (zstudio) — Prisma schema
+// Project > Character / Tap > Scene > Shot > ShotContent / Frame; Comment polymorphic
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CommentTarget {
+  CHARACTER
+  TAP
+  SCENE
+  SHOT
+}
+
+enum ShotContentType {
+  HANHDONG
+  THOAI
+  AMTHANH
+  ANHSANG
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String
+  isLeader    Boolean  @default(false)
+  permissions String[] @default([])
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Project {
+  id         Int         @id @default(autoincrement())
+  title      String
+  createdAt  DateTime    @default(now()) @map("created_at")
+  characters Character[]
+  taps       Tap[]
+
+  @@map("projects")
+}
+
+model Character {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  desc      String   @default("")
+
+  @@index([projectId])
+  @@map("characters")
+}
+
+model Tap {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  summary   String   @default("")
+  locations String[] @default([])
+  equipment String[] @default([])
+  costumes  String[] @default([])
+  order     Int      @default(0)
+  scenes    Scene[]
+
+  @@index([projectId])
+  @@map("taps")
+}
+
+model Scene {
+  id                Int      @id @default(autoincrement())
+  tapId             Int      @map("tap_id")
+  tap               Tap      @relation(fields: [tapId], references: [id], onDelete: Cascade)
+  title             String
+  space             String   @default("")
+  time              String   @default("")
+  charactersPresent String[] @default([]) @map("characters_present")
+  order             Int      @default(0)
+  shots             Shot[]
+
+  @@index([tapId])
+  @@map("scenes")
+}
+
+model Shot {
+  id           Int           @id @default(autoincrement())
+  sceneId      Int           @map("scene_id")
+  scene        Scene         @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  title        String
+  angle        String   @default("")
+  movement     String   @default("")
+  order        Int           @default(0)
+  contents     ShotContent[]
+  frames       Frame[]
+
+  @@index([sceneId])
+  @@map("shots")
+}
+
+model ShotContent {
+  id        Int             @id @default(autoincrement())
+  shotId    Int             @map("shot_id")
+  shot      Shot            @relation(fields: [shotId], references: [id], onDelete: Cascade)
+  type      ShotContentType
+  character String          @default("")
+  text      String          @default("")
+  order     Int             @default(0)
+
+  @@index([shotId])
+  @@map("shot_contents")
+}
+
+model Frame {
+  id       Int    @id @default(autoincrement())
+  shotId   Int    @map("shot_id")
+  shot     Shot   @relation(fields: [shotId], references: [id], onDelete: Cascade)
+  imageUrl String @map("image_url")
+  order    Int    @default(0)
+
+  @@index([shotId])
+  @@map("frames")
+}
+
+model Comment {
+  id         Int           @id @default(autoincrement())
+  targetType CommentTarget @map("target_type")
+  targetId   Int           @map("target_id")
+  author     String
+  text       String
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  @@index([targetType, targetId])
+  @@map("comments")
+}
