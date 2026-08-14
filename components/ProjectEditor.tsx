@@ -5,6 +5,7 @@ import { canModify, hasPermission, PermissionModule, SHOT_CONTENT_TYPE_TO_MODULE
 import { ApiUser, Character, CommentTarget, Project, Scene, Shot, ShotContent, ShotContentType, Tap } from "@/lib/types";
 import CommentModal from "./CommentModal";
 import CameraPickerModal from "./CameraPickerModal";
+import ExpandableTextArea from "./ExpandableTextArea";
 import { CAMERA_ANGLES, CAMERA_MOVEMENTS } from "@/lib/cameraData";
 
 type CommentTargetState = { type: CommentTarget; id: number; label: string } | null;
@@ -239,14 +240,13 @@ function MainPlotSection({ project, can, patch }: { project: Project; can: CanFn
   return (
     <div>
       <h2 className="text-lg font-semibold text-saffron mb-2">Cốt truyện chính</h2>
-      <textarea
-        key={project.mainPlot}
-        defaultValue={project.mainPlot}
+      <ExpandableTextArea
+        value={project.mainPlot}
         disabled={!editable}
-        onBlur={(e) => e.target.value !== project.mainPlot && patch(`/api/projects/${project.id}`, { mainPlot: e.target.value })}
+        onSave={(v) => patch(`/api/projects/${project.id}`, { mainPlot: v })}
         rows={5}
         placeholder="Tóm tắt cốt truyện tổng thể của dự án..."
-        className="w-full"
+        title="Cốt truyện chính"
       />
     </div>
   );
@@ -299,12 +299,13 @@ function CharacterSection({
                   onDelete={() => del(`/api/characters/${c.id}`)}
                 />
               </div>
-              <textarea
-                defaultValue={c.desc}
+              <ExpandableTextArea
+                value={c.desc}
                 disabled={!editable}
-                onBlur={(e) => e.target.value !== c.desc && patch(`/api/characters/${c.id}`, { desc: e.target.value })}
+                onSave={(v) => patch(`/api/characters/${c.id}`, { desc: v })}
                 rows={2}
                 placeholder="Mô tả nhân vật..."
+                title={`Mô tả nhân vật — ${c.name}`}
               />
               <span className="text-[11px] opacity-50">Tạo bởi {c.createdByName}</span>
             </div>
@@ -436,13 +437,14 @@ function TapItem({
           onDelete={() => del(`/api/taps/${tap.id}`)}
         />
       </div>
-      <textarea
-        defaultValue={tap.summary}
+      <ExpandableTextArea
+        value={tap.summary}
         disabled={!editable}
-        onBlur={(e) => e.target.value !== tap.summary && patch(`/api/taps/${tap.id}`, { summary: e.target.value })}
+        onSave={(v) => patch(`/api/taps/${tap.id}`, { summary: v })}
         rows={2}
         placeholder="Tóm tắt Tập..."
-        className="w-full mb-2"
+        className="mb-2"
+        title={`Tóm tắt Tập — ${tap.title}`}
       />
       <ListEditor
         label="Bối cảnh"
@@ -686,13 +688,16 @@ function ShotContentSection({
                 const editable = canMod(mod, c.createdById);
                 return (
                   <div key={c.id} className={`flex items-start gap-2 ${!c.active ? "opacity-50" : ""}`}>
-                    <textarea
-                      defaultValue={c.text}
-                      disabled={!editable}
-                      onBlur={(e) => e.target.value !== c.text && patch(`/api/shot-contents/${c.id}`, { text: e.target.value })}
-                      rows={1}
-                      className="text-sm flex-1"
-                    />
+                    <div className="flex-1">
+                      <ExpandableTextArea
+                        value={c.text}
+                        disabled={!editable}
+                        onSave={(v) => patch(`/api/shot-contents/${c.id}`, { text: v })}
+                        rows={1}
+                        className="text-sm"
+                        title={label}
+                      />
+                    </div>
                     {editable && (
                       <div className="flex gap-1 text-xs shrink-0 pt-1.5">
                         <button
