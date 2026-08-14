@@ -22,64 +22,78 @@ export default function ExpandableTextArea({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
 
+  function openModal() {
+    if (disabled) return;
+    setDraft(value);
+    setOpen(true);
+  }
+
+  function save() {
+    if (draft !== value) onSave(draft);
+    setOpen(false);
+  }
+
   return (
     <>
-      <div className="relative">
-        <textarea
-          key={value}
-          defaultValue={value}
-          disabled={disabled}
-          placeholder={placeholder}
-          rows={rows}
-          onBlur={(e) => e.target.value !== value && onSave(e.target.value)}
-          className={`w-full pr-7 ${className}`}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            setDraft(value);
-            setOpen(true);
-          }}
-          title="Mở rộng để xem/sửa"
-          className="absolute top-1 right-1 text-[10px] w-5 h-5 leading-5 rounded bg-ultra-violet text-dark-purple opacity-70 hover:opacity-100"
-        >
-          ⤢
-        </button>
+      <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        onClick={openModal}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") openModal();
+        }}
+        className={`w-full rounded-md border border-ultra-violet bg-dark-green px-3 py-2 text-sm whitespace-pre-wrap break-words ${
+          disabled ? "opacity-50" : "cursor-pointer active:bg-ultra-violet/20"
+        } ${className}`}
+        style={{ minHeight: `${rows * 1.4 + 1}rem` }}
+      >
+        {value ? value : <span className="opacity-50">{placeholder}</span>}
       </div>
 
       {open && (
         <div
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-dark-purple border border-ultra-violet rounded-lg p-4 w-full max-w-2xl"
+            className="bg-dark-purple border border-ultra-violet w-full sm:max-w-2xl rounded-t-2xl sm:rounded-lg flex flex-col max-h-[92vh] sm:max-h-[80vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {title && <div className="text-sm font-semibold text-saffron mb-2">{title}</div>}
+            <div className="px-4 py-3 border-b border-ultra-violet flex items-center justify-between shrink-0">
+              <div className="text-sm font-semibold text-saffron truncate pr-2">{title}</div>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Đóng"
+                className="text-ultra-violet text-xl leading-none px-2 shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+
             <textarea
               autoFocus
               value={draft}
               disabled={disabled}
               placeholder={placeholder}
               onChange={(e) => setDraft(e.target.value)}
-              rows={12}
-              className="w-full"
+              className="flex-1 w-full resize-none px-4 py-3 text-base leading-relaxed"
+              style={{ minHeight: "40vh" }}
             />
-            <div className="flex justify-end gap-2 mt-3">
+
+            <div
+              className="flex justify-end gap-2 px-4 py-3 border-t border-ultra-violet shrink-0"
+              style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+            >
               <button
                 onClick={() => setOpen(false)}
-                className="px-3 py-1.5 rounded-md text-sm border border-ultra-violet text-ultra-violet"
+                className="px-4 py-2 rounded-md text-sm border border-ultra-violet text-ultra-violet"
               >
                 Hủy
               </button>
               {!disabled && (
                 <button
-                  onClick={() => {
-                    if (draft !== value) onSave(draft);
-                    setOpen(false);
-                  }}
-                  className="px-3 py-1.5 rounded-md text-sm bg-saffron text-dark-purple font-semibold"
+                  onClick={save}
+                  className="px-4 py-2 rounded-md text-sm bg-saffron text-dark-purple font-semibold"
                 >
                   Lưu
                 </button>
