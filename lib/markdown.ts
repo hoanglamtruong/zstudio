@@ -13,7 +13,7 @@ type TapLike = {
   scenes: SceneLike[];
 };
 type CharacterLike = { name: string; desc: string };
-type ProjectLike = { title: string; characters: CharacterLike[]; taps: TapLike[] };
+type ProjectLike = { title: string; mainPlot: string; characters: CharacterLike[]; taps: TapLike[] };
 
 const CONTENT_LABEL: Record<string, string> = {
   HANHDONG: "Hành động",
@@ -33,6 +33,10 @@ function movementLabel(key: string): string {
 export function generateMarkdown(project: ProjectLike): string {
   const lines: string[] = [];
   lines.push(`# ${project.title}`, "");
+
+  if (project.mainPlot) {
+    lines.push("## Cốt truyện chính", "", project.mainPlot, "");
+  }
 
   if (project.characters.length > 0) {
     lines.push("## Nhân vật", "");

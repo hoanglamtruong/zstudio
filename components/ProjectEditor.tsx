@@ -136,6 +136,7 @@ export default function ProjectEditor({ projectId, user }: { projectId: number; 
         </section>
       ) : (
         <section className="flex flex-col gap-8">
+          <MainPlotSection project={project} can={can} patch={patch} />
           <CharacterSection project={project} can={can} post={post} patch={patch} openComment={setCommentTarget} />
           <TapSection project={project} can={can} user={user} post={post} patch={patch} openComment={setCommentTarget} openCamera={setCameraFor} />
         </section>
@@ -162,6 +163,35 @@ export default function ProjectEditor({ projectId, user }: { projectId: number; 
         />
       )}
     </main>
+  );
+}
+
+// ───────────────────────────── Cốt truyện chính ─────────────────────────────
+
+function MainPlotSection({
+  project,
+  can,
+  patch,
+}: {
+  project: Project;
+  can: (m: PermissionModule) => boolean;
+  patch: (url: string, body: unknown) => Promise<boolean>;
+}) {
+  const editable = can("tapinfo");
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-saffron mb-2">Cốt truyện chính</h2>
+      <textarea
+        key={project.mainPlot}
+        defaultValue={project.mainPlot}
+        disabled={!editable}
+        onBlur={(e) => e.target.value !== project.mainPlot && patch(`/api/projects/${project.id}`, { mainPlot: e.target.value })}
+        rows={5}
+        placeholder="Tóm tắt cốt truyện tổng thể của dự án..."
+        className="w-full"
+      />
+    </div>
   );
 }
 

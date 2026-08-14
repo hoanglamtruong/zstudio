@@ -69,6 +69,7 @@ export type Character = {
 export type Project = {
   id: number;
   title: string;
+  mainPlot: string;
   createdAt: string;
   characters: Character[];
   taps: Tap[];

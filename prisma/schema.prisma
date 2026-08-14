@@ -40,6 +40,7 @@ model User {
 model Project {
   id         Int         @id @default(autoincrement())
   title      String
+  mainPlot   String      @default("") @map("main_plot")
   createdAt  DateTime    @default(now()) @map("created_at")
   characters Character[]
   taps       Tap[]
