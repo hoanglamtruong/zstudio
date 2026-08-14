@@ -284,12 +284,16 @@ function CharacterSection({
           return (
             <div key={c.id} className={`bg-dark-green rounded-md p-3 flex flex-col gap-1 ${!c.active ? "opacity-50" : ""}`}>
               <div className="flex items-center gap-2">
-                <input
-                  defaultValue={c.name}
-                  disabled={!editable}
-                  onBlur={(e) => e.target.value !== c.name && patch(`/api/characters/${c.id}`, { name: e.target.value })}
-                  className="font-medium flex-1"
-                />
+                <div className="flex-1 min-w-0">
+                  <ExpandableTextArea
+                    value={c.name}
+                    disabled={!editable}
+                    onSave={(v) => patch(`/api/characters/${c.id}`, { name: v })}
+                    rows={1}
+                    className="font-medium"
+                    title="Tên nhân vật"
+                  />
+                </div>
                 <ItemActions
                   active={c.active}
                   canMod={editable}
@@ -421,12 +425,16 @@ function TapItem({
   return (
     <div className={`bg-dark-green rounded-lg p-4 ${!tap.active ? "opacity-50" : ""}`}>
       <div className="flex items-center gap-2 mb-2">
-        <input
-          defaultValue={tap.title}
-          disabled={!editable}
-          onBlur={(e) => e.target.value !== tap.title && patch(`/api/taps/${tap.id}`, { title: e.target.value })}
-          className="font-semibold flex-1"
-        />
+        <div className="flex-1 min-w-0">
+          <ExpandableTextArea
+            value={tap.title}
+            disabled={!editable}
+            onSave={(v) => patch(`/api/taps/${tap.id}`, { title: v })}
+            rows={1}
+            className="font-semibold"
+            title="Tên Tập"
+          />
+        </div>
         {/* Ẩn/Xóa Tập là thao tác cấu trúc: chỉ leader (giống add Tập). */}
         <ItemActions
           active={tap.active}
@@ -526,12 +534,16 @@ function SceneItem({
   return (
     <div className={`bg-dark-purple rounded-md p-3 ${!scene.active ? "opacity-50" : ""}`}>
       <div className="flex items-center gap-2 mb-2">
-        <input
-          defaultValue={scene.title}
-          disabled={!editable}
-          onBlur={(e) => e.target.value !== scene.title && patch(`/api/scenes/${scene.id}`, { title: e.target.value })}
-          className="font-medium flex-1 text-sm"
-        />
+        <div className="flex-1 min-w-0">
+          <ExpandableTextArea
+            value={scene.title}
+            disabled={!editable}
+            onSave={(v) => patch(`/api/scenes/${scene.id}`, { title: v })}
+            rows={1}
+            className="font-medium text-sm"
+            title="Tên Cảnh"
+          />
+        </div>
         <ItemActions
           active={scene.active}
           canMod={editable}
@@ -542,20 +554,28 @@ function SceneItem({
         />
       </div>
       <div className="flex gap-2 mb-2">
-        <input
-          defaultValue={scene.space}
-          disabled={!editable}
-          onBlur={(e) => e.target.value !== scene.space && patch(`/api/scenes/${scene.id}`, { space: e.target.value })}
-          placeholder="Không gian"
-          className="flex-1 text-sm"
-        />
-        <input
-          defaultValue={scene.time}
-          disabled={!editable}
-          onBlur={(e) => e.target.value !== scene.time && patch(`/api/scenes/${scene.id}`, { time: e.target.value })}
-          placeholder="Thời gian"
-          className="flex-1 text-sm"
-        />
+        <div className="flex-1 min-w-0">
+          <ExpandableTextArea
+            value={scene.space}
+            disabled={!editable}
+            onSave={(v) => patch(`/api/scenes/${scene.id}`, { space: v })}
+            rows={1}
+            className="text-sm"
+            placeholder="Không gian"
+            title="Không gian"
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <ExpandableTextArea
+            value={scene.time}
+            disabled={!editable}
+            onSave={(v) => patch(`/api/scenes/${scene.id}`, { time: v })}
+            rows={1}
+            className="text-sm"
+            placeholder="Thời gian"
+            title="Thời gian"
+          />
+        </div>
       </div>
       <ListEditor
         label="Nhân vật có mặt"
@@ -613,12 +633,16 @@ function ShotItem({
   return (
     <div className={`bg-dark-green rounded-md p-3 ${!shot.active ? "opacity-50" : ""}`}>
       <div className="flex items-center gap-2 mb-2">
-        <input
-          defaultValue={shot.title}
-          disabled={!editable}
-          onBlur={(e) => e.target.value !== shot.title && patch(`/api/shots/${shot.id}`, { title: e.target.value })}
-          className="font-medium flex-1 text-sm"
-        />
+        <div className="flex-1 min-w-0">
+          <ExpandableTextArea
+            value={shot.title}
+            disabled={!editable}
+            onSave={(v) => patch(`/api/shots/${shot.id}`, { title: v })}
+            rows={1}
+            className="font-medium text-sm"
+            title="Tên Shot"
+          />
+        </div>
         <ItemActions
           active={shot.active}
           canMod={editable}
@@ -688,7 +712,7 @@ function ShotContentSection({
                 const editable = canMod(mod, c.createdById);
                 return (
                   <div key={c.id} className={`flex items-start gap-2 ${!c.active ? "opacity-50" : ""}`}>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <ExpandableTextArea
                         value={c.text}
                         disabled={!editable}
@@ -847,23 +871,22 @@ function ListEditor({
   disabled: boolean;
   onChange: (v: string[]) => void;
 }) {
-  const [text, setText] = useState(values.join(", "));
-
   return (
     <div className="mb-2">
       <div className="text-xs opacity-70 mb-1">{label} (phân cách bởi dấu phẩy)</div>
-      <input
-        value={text}
+      <ExpandableTextArea
+        value={values.join(", ")}
         disabled={disabled}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={() => {
+        rows={1}
+        className="text-sm"
+        title={label}
+        onSave={(text) => {
           const v = text
             .split(",")
             .map((s) => s.trim())
             .filter(Boolean);
           onChange(v);
         }}
-        className="w-full text-sm"
       />
     </div>
   );

@@ -42,7 +42,7 @@ export default function ExpandableTextArea({
         onKeyDown={(e) => {
           if (e.key === "Enter") openModal();
         }}
-        className={`w-full rounded-md border border-ultra-violet bg-dark-green px-3 py-2 text-sm whitespace-pre-wrap break-words ${
+        className={`w-full min-w-0 box-border rounded-md border border-ultra-violet bg-dark-green px-3 py-2 text-sm whitespace-pre-wrap break-words ${
           disabled ? "opacity-50" : "cursor-pointer active:bg-ultra-violet/20"
         } ${className}`}
         style={{ minHeight: `${rows * 1.4 + 1}rem` }}
@@ -52,15 +52,15 @@ export default function ExpandableTextArea({
 
       {open && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
+          className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center overflow-hidden"
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-dark-purple border border-ultra-violet w-full sm:max-w-2xl rounded-t-2xl sm:rounded-lg flex flex-col max-h-[92vh] sm:max-h-[80vh]"
+            className="bg-dark-purple border border-ultra-violet w-full sm:max-w-2xl min-w-0 max-w-full box-border rounded-t-2xl sm:rounded-lg flex flex-col max-h-[92vh] sm:max-h-[80vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-4 py-3 border-b border-ultra-violet flex items-center justify-between shrink-0">
-              <div className="text-sm font-semibold text-saffron truncate pr-2">{title}</div>
+            <div className="px-4 py-3 border-b border-ultra-violet flex items-center justify-between shrink-0 min-w-0">
+              <div className="text-sm font-semibold text-saffron truncate pr-2 min-w-0">{title}</div>
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Đóng"
@@ -76,7 +76,7 @@ export default function ExpandableTextArea({
               disabled={disabled}
               placeholder={placeholder}
               onChange={(e) => setDraft(e.target.value)}
-              className="flex-1 w-full resize-none px-4 py-3 text-base leading-relaxed"
+              className="flex-1 w-full min-w-0 box-border resize-none px-4 py-3 text-base leading-relaxed"
               style={{ minHeight: "40vh" }}
             />
 
