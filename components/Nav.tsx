@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import PwaInstall from "./PwaInstall";
 
 type NavUser = { id: number; name: string; isLeader: boolean };
 type NavProject = { id: number; title: string };
@@ -77,6 +78,7 @@ export default function Nav({ user }: { user: NavUser }) {
         </div>
       </div>
       <div className="flex items-center gap-4 text-sm">
+        <PwaInstall />
         <span className="text-saffron">
           {user.name}
           {user.isLeader && (
