@@ -34,7 +34,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (blockReason) return NextResponse.json({ error: blockReason }, { status: 400 });
   }
 
-  const user = await prisma.user.update({ where: { id: userId }, data });
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data,
+    select: { id: true, username: true, name: true, isLeader: true, permissions: true, active: true, createdAt: true },
+  });
   return NextResponse.json({ user });
 }
 

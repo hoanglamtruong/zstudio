@@ -26,6 +26,8 @@ enum ShotContentType {
 
 model User {
   id          Int      @id @default(autoincrement())
+  username    String   @unique
+  password    String
   name        String
   isLeader    Boolean  @default(false)
   permissions String[] @default([])

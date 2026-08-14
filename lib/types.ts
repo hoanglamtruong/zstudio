@@ -3,6 +3,7 @@ export type ShotContentType = "HANHDONG" | "THOAI" | "AMTHANH" | "ANHSANG";
 
 export type ApiUser = {
   id: number;
+  username: string;
   name: string;
   isLeader: boolean;
   permissions: string[];

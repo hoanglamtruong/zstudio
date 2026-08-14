@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { PERMISSION_MODULES, PermissionModule } from "@/lib/permissions";
 
-type ApiUser = { id: number; name: string; isLeader: boolean; permissions: string[]; active: boolean };
+type ApiUser = {
+  id: number;
+  username: string;
+  name: string;
+  isLeader: boolean;
+  permissions: string[];
+  active: boolean;
+};
 
 const MODULE_LABELS: Record<PermissionModule, string> = {
   nhanvat: "Nhân vật",
@@ -20,6 +27,8 @@ export default function UserManagement() {
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   function load() {
@@ -32,13 +41,15 @@ export default function UserManagement() {
   useEffect(load, []);
 
   async function createUser() {
-    const n = name.trim();
-    if (!n) return;
+    if (!name.trim() || !username.trim() || password.length < 6) {
+      setError("Điền đủ tên, tên đăng nhập và mật khẩu (từ 6 ký tự)");
+      return;
+    }
     setError("");
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: n, permissions: [] }),
+      body: JSON.stringify({ name, username, password, permissions: [] }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -46,6 +57,8 @@ export default function UserManagement() {
       return;
     }
     setName("");
+    setUsername("");
+    setPassword("");
     load();
   }
 
@@ -72,10 +85,25 @@ export default function UserManagement() {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Sửa tên thất bại");
-      load();
-      return;
     }
     load();
+  }
+
+  async function resetPassword(u: ApiUser) {
+    const next = prompt(`Mật khẩu mới cho "${u.name}" (từ 6 ký tự):`);
+    if (!next) return;
+    setError("");
+    const res = await fetch(`/api/users/${u.id}/password`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: next }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? "Đổi mật khẩu thất bại");
+      return;
+    }
+    alert("Đã đổi mật khẩu.");
   }
 
   async function toggleActive(u: ApiUser) {
@@ -109,14 +137,17 @@ export default function UserManagement() {
     <main className="flex-1 px-6 py-8 max-w-3xl mx-auto w-full">
       <h1 className="text-2xl font-bold text-saffron mb-6">Quản lý User &amp; Phân quyền</h1>
 
-      <div className="flex gap-2 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên hiển thị..." />
+        <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Tên đăng nhập..." />
         <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Tên user mới..."
-          className="flex-1"
-          onKeyDown={(e) => e.key === "Enter" && createUser()}
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Mật khẩu (≥6 ký tự)..."
         />
+      </div>
+      <div className="mb-6">
         <button onClick={createUser} className="px-4 py-2 rounded-md bg-saffron text-dark-purple font-semibold">
           + Thêm user
         </button>
@@ -128,7 +159,7 @@ export default function UserManagement() {
       <div className="flex flex-col gap-4">
         {users.map((u) => (
           <div key={u.id} className={`bg-dark-green rounded-lg p-4 ${!u.active ? "opacity-50" : ""}`}>
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-1">
               <input
                 defaultValue={u.name}
                 key={u.name}
@@ -137,16 +168,16 @@ export default function UserManagement() {
               />
               {u.isLeader && <span className="px-2 py-0.5 rounded bg-ultra-violet text-xs shrink-0">Leader</span>}
               {!u.active && <span className="px-2 py-0.5 rounded bg-dark-purple text-xs shrink-0">Đã ẩn</span>}
-              <button
-                onClick={() => toggleActive(u)}
-                className="text-xs text-ultra-violet hover:text-saffron underline shrink-0"
-              >
+            </div>
+            <div className="flex items-center gap-3 mb-3 text-xs">
+              <span className="opacity-60">Đăng nhập: {u.username}</span>
+              <button onClick={() => resetPassword(u)} className="text-ultra-violet hover:text-saffron underline">
+                Đổi mật khẩu
+              </button>
+              <button onClick={() => toggleActive(u)} className="text-ultra-violet hover:text-saffron underline">
                 {u.active ? "Ẩn" : "Hiện lại"}
               </button>
-              <button
-                onClick={() => deleteUser(u)}
-                className="text-xs text-red-400 hover:text-red-300 underline shrink-0"
-              >
+              <button onClick={() => deleteUser(u)} className="text-red-400 hover:text-red-300 underline">
                 Xóa
               </button>
             </div>
