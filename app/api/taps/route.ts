@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
       equipment: Array.isArray(body?.equipment) ? body.equipment : [],
       costumes: Array.isArray(body?.costumes) ? body.costumes : [],
       order: count + 1,
+      createdById: user.id,
+      createdByName: user.name,
     },
   });
   return NextResponse.json({ tap }, { status: 201 });

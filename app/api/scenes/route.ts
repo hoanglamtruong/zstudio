@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
       time: String(body?.time ?? ""),
       charactersPresent: Array.isArray(body?.charactersPresent) ? body.charactersPresent : [],
       order: count + 1,
+      createdById: user.id,
+      createdByName: user.name,
     },
   });
   return NextResponse.json({ scene }, { status: 201 });

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   const count = await prisma.frame.count({ where: { shotId } });
   const frame = await prisma.frame.create({
-    data: { shotId, imageUrl, order: count + 1 },
+    data: { shotId, imageUrl, order: count + 1, createdById: user.id, createdByName: user.name },
   });
   return NextResponse.json({ frame }, { status: 201 });
 }

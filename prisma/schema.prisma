@@ -49,27 +49,33 @@ model Project {
 }
 
 model Character {
-  id        Int      @id @default(autoincrement())
-  projectId Int      @map("project_id")
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name      String
-  desc      String   @default("")
+  id            Int      @id @default(autoincrement())
+  projectId     Int      @map("project_id")
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name          String
+  desc          String   @default("")
+  createdById   Int      @map("created_by_id")
+  createdByName String   @map("created_by_name")
+  active        Boolean  @default(true)
 
   @@index([projectId])
   @@map("characters")
 }
 
 model Tap {
-  id        Int      @id @default(autoincrement())
-  projectId Int      @map("project_id")
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  title     String
-  summary   String   @default("")
-  locations String[] @default([])
-  equipment String[] @default([])
-  costumes  String[] @default([])
-  order     Int      @default(0)
-  scenes    Scene[]
+  id            Int      @id @default(autoincrement())
+  projectId     Int      @map("project_id")
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title         String
+  summary       String   @default("")
+  locations     String[] @default([])
+  equipment     String[] @default([])
+  costumes      String[] @default([])
+  order         Int      @default(0)
+  createdById   Int      @map("created_by_id")
+  createdByName String   @map("created_by_name")
+  active        Boolean  @default(true)
+  scenes        Scene[]
 
   @@index([projectId])
   @@map("taps")
@@ -84,6 +90,9 @@ model Scene {
   time              String   @default("")
   charactersPresent String[] @default([]) @map("characters_present")
   order             Int      @default(0)
+  createdById       Int      @map("created_by_id")
+  createdByName     String   @map("created_by_name")
+  active            Boolean  @default(true)
   shots             Shot[]
 
   @@index([tapId])
@@ -91,39 +100,48 @@ model Scene {
 }
 
 model Shot {
-  id           Int           @id @default(autoincrement())
-  sceneId      Int           @map("scene_id")
-  scene        Scene         @relation(fields: [sceneId], references: [id], onDelete: Cascade)
-  title        String
-  angle        String   @default("")
-  movement     String   @default("")
-  order        Int           @default(0)
-  contents     ShotContent[]
-  frames       Frame[]
+  id            Int           @id @default(autoincrement())
+  sceneId       Int           @map("scene_id")
+  scene         Scene         @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  title         String
+  angle         String        @default("")
+  movement      String        @default("")
+  order         Int           @default(0)
+  createdById   Int           @map("created_by_id")
+  createdByName String        @map("created_by_name")
+  active        Boolean       @default(true)
+  contents      ShotContent[]
+  frames        Frame[]
 
   @@index([sceneId])
   @@map("shots")
 }
 
 model ShotContent {
-  id        Int             @id @default(autoincrement())
-  shotId    Int             @map("shot_id")
-  shot      Shot            @relation(fields: [shotId], references: [id], onDelete: Cascade)
-  type      ShotContentType
-  character String          @default("")
-  text      String          @default("")
-  order     Int             @default(0)
+  id            Int             @id @default(autoincrement())
+  shotId        Int             @map("shot_id")
+  shot          Shot            @relation(fields: [shotId], references: [id], onDelete: Cascade)
+  type          ShotContentType
+  character     String          @default("")
+  text          String          @default("")
+  order         Int             @default(0)
+  createdById   Int             @map("created_by_id")
+  createdByName String          @map("created_by_name")
+  active        Boolean         @default(true)
 
   @@index([shotId])
   @@map("shot_contents")
 }
 
 model Frame {
-  id       Int    @id @default(autoincrement())
-  shotId   Int    @map("shot_id")
-  shot     Shot   @relation(fields: [shotId], references: [id], onDelete: Cascade)
-  imageUrl String @map("image_url")
-  order    Int    @default(0)
+  id            Int      @id @default(autoincrement())
+  shotId        Int      @map("shot_id")
+  shot          Shot     @relation(fields: [shotId], references: [id], onDelete: Cascade)
+  imageUrl      String   @map("image_url")
+  order         Int      @default(0)
+  createdById   Int      @map("created_by_id")
+  createdByName String   @map("created_by_name")
+  active        Boolean  @default(true)
 
   @@index([shotId])
   @@map("frames")

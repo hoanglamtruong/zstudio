@@ -40,10 +40,12 @@ async function main() {
       data: { title: "Dự án mẫu — Hành Trình" },
     });
 
+    const ownedBy = { createdById: leader.id, createdByName: leader.name };
+
     await prisma.character.createMany({
       data: [
-        { projectId: project.id, name: "Minh", desc: "Nhân vật chính, 25 tuổi, đạo diễn trẻ." },
-        { projectId: project.id, name: "Lan", desc: "Bạn thân của Minh, biên kịch." },
+        { projectId: project.id, name: "Minh", desc: "Nhân vật chính, 25 tuổi, đạo diễn trẻ.", ...ownedBy },
+        { projectId: project.id, name: "Lan", desc: "Bạn thân của Minh, biên kịch.", ...ownedBy },
       ],
     });
 
@@ -56,6 +58,7 @@ async function main() {
         equipment: ["Máy quay chính", "Chân máy"],
         costumes: ["Áo sơ mi xanh"],
         order: 1,
+        ...ownedBy,
       },
     });
 
@@ -67,6 +70,7 @@ async function main() {
         time: "Buổi sáng",
         charactersPresent: ["Minh", "Lan"],
         order: 1,
+        ...ownedBy,
       },
     });
 
@@ -77,13 +81,14 @@ async function main() {
         angle: "eye-level",
         movement: "dolly",
         order: 1,
+        ...ownedBy,
       },
     });
 
     await prisma.shotContent.createMany({
       data: [
-        { shotId: shot.id, type: "HANHDONG", character: "Minh", text: "Minh đẩy cửa bước vào, nhìn quanh tìm Lan.", order: 1 },
-        { shotId: shot.id, type: "THOAI", character: "Minh", text: "Xin lỗi, tôi đến trễ!", order: 2 },
+        { shotId: shot.id, type: "HANHDONG", character: "Minh", text: "Minh đẩy cửa bước vào, nhìn quanh tìm Lan.", order: 1, ...ownedBy },
+        { shotId: shot.id, type: "THOAI", character: "Minh", text: "Xin lỗi, tôi đến trễ!", order: 2, ...ownedBy },
       ],
     });
 
@@ -92,6 +97,7 @@ async function main() {
         shotId: shot.id,
         imageUrl: "https://placehold.co/640x360?text=Frame+1",
         order: 1,
+        ...ownedBy,
       },
     });
   }

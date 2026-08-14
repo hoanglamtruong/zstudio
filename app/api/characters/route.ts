@@ -15,7 +15,13 @@ export async function POST(req: NextRequest) {
   if (!projectId || !name) return NextResponse.json({ error: "Thiếu projectId/name" }, { status: 400 });
 
   const character = await prisma.character.create({
-    data: { projectId, name, desc: String(body?.desc ?? "") },
+    data: {
+      projectId,
+      name,
+      desc: String(body?.desc ?? ""),
+      createdById: user.id,
+      createdByName: user.name,
+    },
   });
   return NextResponse.json({ character }, { status: 201 });
 }

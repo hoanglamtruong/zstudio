@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { hasPermission, PermissionModule, SHOT_CONTENT_TYPE_TO_MODULE } from "@/lib/permissions";
+import { canModify, hasPermission, PermissionModule, SHOT_CONTENT_TYPE_TO_MODULE } from "@/lib/permissions";
 import { ApiUser, Character, CommentTarget, Project, Scene, Shot, ShotContent, ShotContentType, Tap } from "@/lib/types";
 import CommentModal from "./CommentModal";
 import CameraPickerModal from "./CameraPickerModal";
 import { CAMERA_ANGLES, CAMERA_MOVEMENTS } from "@/lib/cameraData";
 
 type CommentTargetState = { type: CommentTarget; id: number; label: string } | null;
+type CanFn = (m: PermissionModule) => boolean;
+type CanModFn = (m: PermissionModule, createdById: number) => boolean;
+type Fetcher = (url: string, body: unknown) => Promise<boolean>;
+type Deleter = (url: string) => Promise<boolean>;
 
 const CONTENT_TYPES: { type: ShotContentType; label: string }[] = [
   { type: "HANHDONG", label: "Hành động" },
@@ -23,11 +27,43 @@ function movementLabel(key: string) {
   return CAMERA_MOVEMENTS.find((m) => m.key === key)?.vi ?? (key || "—");
 }
 
-function CommentButton({ onClick }: { onClick: () => void }) {
+// Thanh hành động dùng chung: Bình luận (ai cũng bấm được) + Ẩn/Hiện + Xóa
+// (chỉ hiện nếu canMod true — leader luôn true, staff chỉ true trên đối tượng do mình tạo).
+function ItemActions({
+  active,
+  canMod,
+  onToggleActive,
+  onDelete,
+  onComment,
+  confirmLabel,
+}: {
+  active: boolean;
+  canMod: boolean;
+  onToggleActive: () => void;
+  onDelete: () => void;
+  onComment: () => void;
+  confirmLabel: string;
+}) {
   return (
-    <button onClick={onClick} className="text-xs text-ultra-violet hover:text-saffron underline shrink-0">
-      💬 Bình luận
-    </button>
+    <div className="flex items-center gap-2 shrink-0 text-xs">
+      {!active && <span className="px-1.5 py-0.5 rounded bg-dark-purple opacity-70">Đã ẩn</span>}
+      <button onClick={onComment} className="text-ultra-violet hover:text-saffron underline">
+        💬 Bình luận
+      </button>
+      {canMod && (
+        <>
+          <button onClick={onToggleActive} className="text-ultra-violet hover:text-saffron underline">
+            {active ? "Ẩn" : "Hiện"}
+          </button>
+          <button
+            onClick={() => confirm(`Xóa hẳn "${confirmLabel}"? Không thể hoàn tác.`) && onDelete()}
+            className="text-red-400 hover:text-red-300 underline"
+          >
+            Xóa
+          </button>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -84,6 +120,16 @@ export default function ProjectEditor({ projectId, user }: { projectId: number; 
     return res.ok;
   }
 
+  async function del(url: string) {
+    const res = await fetch(url, { method: "DELETE" });
+    if (res.ok) load();
+    else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Xóa thất bại");
+    }
+    return res.ok;
+  }
+
   async function copyMarkdown() {
     const res = await fetch(`/api/export/${projectId}`);
     const text = await res.text();
@@ -93,7 +139,8 @@ export default function ProjectEditor({ projectId, user }: { projectId: number; 
 
   if (!project) return <p className="px-6 py-8 opacity-70">Đang tải dự án...</p>;
 
-  const can = (m: PermissionModule) => hasPermission(user, m);
+  const can: CanFn = (m) => hasPermission(user, m);
+  const canMod: CanModFn = (m, createdById) => canModify(user, m, createdById);
 
   return (
     <main className="flex-1 px-6 py-6 max-w-4xl mx-auto w-full">
@@ -137,8 +184,26 @@ export default function ProjectEditor({ projectId, user }: { projectId: number; 
       ) : (
         <section className="flex flex-col gap-8">
           <MainPlotSection project={project} can={can} patch={patch} />
-          <CharacterSection project={project} can={can} post={post} patch={patch} openComment={setCommentTarget} />
-          <TapSection project={project} can={can} user={user} post={post} patch={patch} openComment={setCommentTarget} openCamera={setCameraFor} />
+          <CharacterSection
+            project={project}
+            can={can}
+            canMod={canMod}
+            post={post}
+            patch={patch}
+            del={del}
+            openComment={setCommentTarget}
+          />
+          <TapSection
+            project={project}
+            can={can}
+            canMod={canMod}
+            user={user}
+            post={post}
+            patch={patch}
+            del={del}
+            openComment={setCommentTarget}
+            openCamera={setCameraFor}
+          />
         </section>
       )}
 
@@ -168,15 +233,7 @@ export default function ProjectEditor({ projectId, user }: { projectId: number; 
 
 // ───────────────────────────── Cốt truyện chính ─────────────────────────────
 
-function MainPlotSection({
-  project,
-  can,
-  patch,
-}: {
-  project: Project;
-  can: (m: PermissionModule) => boolean;
-  patch: (url: string, body: unknown) => Promise<boolean>;
-}) {
+function MainPlotSection({ project, can, patch }: { project: Project; can: CanFn; patch: Fetcher }) {
   const editable = can("tapinfo");
 
   return (
@@ -200,45 +257,61 @@ function MainPlotSection({
 function CharacterSection({
   project,
   can,
+  canMod,
   post,
   patch,
+  del,
   openComment,
 }: {
   project: Project;
-  can: (m: PermissionModule) => boolean;
-  post: (url: string, body: unknown) => Promise<boolean>;
-  patch: (url: string, body: unknown) => Promise<boolean>;
+  can: CanFn;
+  canMod: CanModFn;
+  post: Fetcher;
+  patch: Fetcher;
+  del: Deleter;
   openComment: (t: CommentTargetState) => void;
 }) {
   const [name, setName] = useState("");
-  const editable = can("nhanvat");
+  const canCreate = can("nhanvat");
+  const visible = project.characters.filter((c) => c.active || canMod("nhanvat", c.createdById));
 
   return (
     <div>
       <h2 className="text-lg font-semibold text-saffron mb-2">Nhân vật</h2>
       <div className="flex flex-col gap-2 mb-3">
-        {project.characters.map((c: Character) => (
-          <div key={c.id} className="bg-dark-green rounded-md p-3 flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <input
-                defaultValue={c.name}
+        {visible.map((c: Character) => {
+          const editable = canMod("nhanvat", c.createdById);
+          return (
+            <div key={c.id} className={`bg-dark-green rounded-md p-3 flex flex-col gap-1 ${!c.active ? "opacity-50" : ""}`}>
+              <div className="flex items-center gap-2">
+                <input
+                  defaultValue={c.name}
+                  disabled={!editable}
+                  onBlur={(e) => e.target.value !== c.name && patch(`/api/characters/${c.id}`, { name: e.target.value })}
+                  className="font-medium flex-1"
+                />
+                <ItemActions
+                  active={c.active}
+                  canMod={editable}
+                  confirmLabel={c.name}
+                  onComment={() => openComment({ type: "CHARACTER", id: c.id, label: c.name })}
+                  onToggleActive={() => patch(`/api/characters/${c.id}`, { active: !c.active })}
+                  onDelete={() => del(`/api/characters/${c.id}`)}
+                />
+              </div>
+              <textarea
+                defaultValue={c.desc}
                 disabled={!editable}
-                onBlur={(e) => e.target.value !== c.name && patch(`/api/characters/${c.id}`, { name: e.target.value })}
-                className="font-medium flex-1"
+                onBlur={(e) => e.target.value !== c.desc && patch(`/api/characters/${c.id}`, { desc: e.target.value })}
+                rows={2}
+                placeholder="Mô tả nhân vật..."
               />
-              <CommentButton onClick={() => openComment({ type: "CHARACTER", id: c.id, label: c.name })} />
+              <span className="text-[11px] opacity-50">Tạo bởi {c.createdByName}</span>
             </div>
-            <textarea
-              defaultValue={c.desc}
-              disabled={!editable}
-              onBlur={(e) => e.target.value !== c.desc && patch(`/api/characters/${c.id}`, { desc: e.target.value })}
-              rows={2}
-              placeholder="Mô tả nhân vật..."
-            />
-          </div>
-        ))}
+          );
+        })}
       </div>
-      {editable && (
+      {canCreate && (
         <div className="flex gap-2">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên nhân vật mới..." className="flex-1" />
           <button
@@ -261,28 +334,44 @@ function CharacterSection({
 function TapSection({
   project,
   can,
+  canMod,
   user,
   post,
   patch,
+  del,
   openComment,
   openCamera,
 }: {
   project: Project;
-  can: (m: PermissionModule) => boolean;
+  can: CanFn;
+  canMod: CanModFn;
   user: ApiUser;
-  post: (url: string, body: unknown) => Promise<boolean>;
-  patch: (url: string, body: unknown) => Promise<boolean>;
+  post: Fetcher;
+  patch: Fetcher;
+  del: Deleter;
   openComment: (t: CommentTargetState) => void;
   openCamera: (s: Shot) => void;
 }) {
   const [title, setTitle] = useState("");
+  const visibleTaps = project.taps.filter((t) => t.active || user.isLeader);
 
   return (
     <div>
       <h2 className="text-lg font-semibold text-saffron mb-2">Tập</h2>
       <div className="flex flex-col gap-5">
-        {project.taps.map((tap: Tap) => (
-          <TapItem key={tap.id} tap={tap} can={can} post={post} patch={patch} openComment={openComment} openCamera={openCamera} />
+        {visibleTaps.map((tap: Tap) => (
+          <TapItem
+            key={tap.id}
+            tap={tap}
+            can={can}
+            canMod={canMod}
+            isLeader={user.isLeader}
+            post={post}
+            patch={patch}
+            del={del}
+            openComment={openComment}
+            openCamera={openCamera}
+          />
         ))}
       </div>
       {user.isLeader && (
@@ -306,23 +395,30 @@ function TapSection({
 function TapItem({
   tap,
   can,
+  canMod,
+  isLeader,
   post,
   patch,
+  del,
   openComment,
   openCamera,
 }: {
   tap: Tap;
-  can: (m: PermissionModule) => boolean;
-  post: (url: string, body: unknown) => Promise<boolean>;
-  patch: (url: string, body: unknown) => Promise<boolean>;
+  can: CanFn;
+  canMod: CanModFn;
+  isLeader: boolean;
+  post: Fetcher;
+  patch: Fetcher;
+  del: Deleter;
   openComment: (t: CommentTargetState) => void;
   openCamera: (s: Shot) => void;
 }) {
   const editable = can("tapinfo");
   const [sceneTitle, setSceneTitle] = useState("");
+  const visibleScenes = tap.scenes.filter((s) => s.active || canMod("canh", s.createdById));
 
   return (
-    <div className="bg-dark-green rounded-lg p-4">
+    <div className={`bg-dark-green rounded-lg p-4 ${!tap.active ? "opacity-50" : ""}`}>
       <div className="flex items-center gap-2 mb-2">
         <input
           defaultValue={tap.title}
@@ -330,7 +426,15 @@ function TapItem({
           onBlur={(e) => e.target.value !== tap.title && patch(`/api/taps/${tap.id}`, { title: e.target.value })}
           className="font-semibold flex-1"
         />
-        <CommentButton onClick={() => openComment({ type: "TAP", id: tap.id, label: tap.title })} />
+        {/* Ẩn/Xóa Tập là thao tác cấu trúc: chỉ leader (giống add Tập). */}
+        <ItemActions
+          active={tap.active}
+          canMod={isLeader}
+          confirmLabel={tap.title}
+          onComment={() => openComment({ type: "TAP", id: tap.id, label: tap.title })}
+          onToggleActive={() => patch(`/api/taps/${tap.id}`, { active: !tap.active })}
+          onDelete={() => del(`/api/taps/${tap.id}`)}
+        />
       </div>
       <textarea
         defaultValue={tap.summary}
@@ -358,10 +462,21 @@ function TapItem({
         disabled={!editable}
         onChange={(v) => patch(`/api/taps/${tap.id}`, { costumes: v })}
       />
+      <span className="text-[11px] opacity-50">Tạo bởi {tap.createdByName}</span>
 
       <div className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-ultra-violet">
-        {tap.scenes.map((scene: Scene) => (
-          <SceneItem key={scene.id} scene={scene} can={can} post={post} patch={patch} openComment={openComment} openCamera={openCamera} />
+        {visibleScenes.map((scene: Scene) => (
+          <SceneItem
+            key={scene.id}
+            scene={scene}
+            can={can}
+            canMod={canMod}
+            post={post}
+            patch={patch}
+            del={del}
+            openComment={openComment}
+            openCamera={openCamera}
+          />
         ))}
       </div>
 
@@ -386,23 +501,28 @@ function TapItem({
 function SceneItem({
   scene,
   can,
+  canMod,
   post,
   patch,
+  del,
   openComment,
   openCamera,
 }: {
   scene: Scene;
-  can: (m: PermissionModule) => boolean;
-  post: (url: string, body: unknown) => Promise<boolean>;
-  patch: (url: string, body: unknown) => Promise<boolean>;
+  can: CanFn;
+  canMod: CanModFn;
+  post: Fetcher;
+  patch: Fetcher;
+  del: Deleter;
   openComment: (t: CommentTargetState) => void;
   openCamera: (s: Shot) => void;
 }) {
-  const editable = can("canh");
+  const editable = canMod("canh", scene.createdById);
   const [shotTitle, setShotTitle] = useState("");
+  const visibleShots = scene.shots.filter((s) => s.active || canMod("shot", s.createdById));
 
   return (
-    <div className="bg-dark-purple rounded-md p-3">
+    <div className={`bg-dark-purple rounded-md p-3 ${!scene.active ? "opacity-50" : ""}`}>
       <div className="flex items-center gap-2 mb-2">
         <input
           defaultValue={scene.title}
@@ -410,7 +530,14 @@ function SceneItem({
           onBlur={(e) => e.target.value !== scene.title && patch(`/api/scenes/${scene.id}`, { title: e.target.value })}
           className="font-medium flex-1 text-sm"
         />
-        <CommentButton onClick={() => openComment({ type: "SCENE", id: scene.id, label: scene.title })} />
+        <ItemActions
+          active={scene.active}
+          canMod={editable}
+          confirmLabel={scene.title}
+          onComment={() => openComment({ type: "SCENE", id: scene.id, label: scene.title })}
+          onToggleActive={() => patch(`/api/scenes/${scene.id}`, { active: !scene.active })}
+          onDelete={() => del(`/api/scenes/${scene.id}`)}
+        />
       </div>
       <div className="flex gap-2 mb-2">
         <input
@@ -434,10 +561,11 @@ function SceneItem({
         disabled={!editable}
         onChange={(v) => patch(`/api/scenes/${scene.id}`, { charactersPresent: v })}
       />
+      <span className="text-[11px] opacity-50">Tạo bởi {scene.createdByName}</span>
 
       <div className="mt-3 flex flex-col gap-3 pl-3 border-l-2 border-ultra-violet">
-        {scene.shots.map((shot: Shot) => (
-          <ShotItem key={shot.id} shot={shot} can={can} post={post} patch={patch} openComment={openComment} openCamera={openCamera} />
+        {visibleShots.map((shot: Shot) => (
+          <ShotItem key={shot.id} shot={shot} can={can} canMod={canMod} post={post} patch={patch} del={del} openComment={openComment} openCamera={openCamera} />
         ))}
       </div>
 
@@ -462,22 +590,26 @@ function SceneItem({
 function ShotItem({
   shot,
   can,
+  canMod,
   post,
   patch,
+  del,
   openComment,
   openCamera,
 }: {
   shot: Shot;
-  can: (m: PermissionModule) => boolean;
-  post: (url: string, body: unknown) => Promise<boolean>;
-  patch: (url: string, body: unknown) => Promise<boolean>;
+  can: CanFn;
+  canMod: CanModFn;
+  post: Fetcher;
+  patch: Fetcher;
+  del: Deleter;
   openComment: (t: CommentTargetState) => void;
   openCamera: (s: Shot) => void;
 }) {
-  const editable = can("shot");
+  const editable = canMod("shot", shot.createdById);
 
   return (
-    <div className="bg-dark-green rounded-md p-3">
+    <div className={`bg-dark-green rounded-md p-3 ${!shot.active ? "opacity-50" : ""}`}>
       <div className="flex items-center gap-2 mb-2">
         <input
           defaultValue={shot.title}
@@ -485,19 +617,27 @@ function ShotItem({
           onBlur={(e) => e.target.value !== shot.title && patch(`/api/shots/${shot.id}`, { title: e.target.value })}
           className="font-medium flex-1 text-sm"
         />
-        <CommentButton onClick={() => openComment({ type: "SHOT", id: shot.id, label: shot.title })} />
+        <ItemActions
+          active={shot.active}
+          canMod={editable}
+          confirmLabel={shot.title}
+          onComment={() => openComment({ type: "SHOT", id: shot.id, label: shot.title })}
+          onToggleActive={() => patch(`/api/shots/${shot.id}`, { active: !shot.active })}
+          onDelete={() => del(`/api/shots/${shot.id}`)}
+        />
       </div>
 
       <button
         disabled={!editable}
         onClick={() => openCamera(shot)}
-        className="text-xs px-2 py-1 rounded bg-ultra-violet mb-3 disabled:opacity-50"
+        className="text-xs px-2 py-1 rounded bg-ultra-violet mb-2 disabled:opacity-50"
       >
         🎥 {angleLabel(shot.angle)} · {movementLabel(shot.movement)}
       </button>
+      <div className="text-[11px] opacity-50 mb-2">Tạo bởi {shot.createdByName}</div>
 
-      <ShotContentSection shot={shot} can={can} post={post} patch={patch} />
-      <FrameSection shot={shot} editable={editable} post={post} />
+      <ShotContentSection shot={shot} can={can} canMod={canMod} post={post} patch={patch} del={del} />
+      <FrameSection shot={shot} can={can} canMod={canMod} post={post} patch={patch} del={del} />
     </div>
   );
 }
@@ -505,13 +645,17 @@ function ShotItem({
 function ShotContentSection({
   shot,
   can,
+  canMod,
   post,
   patch,
+  del,
 }: {
   shot: Shot;
-  can: (m: PermissionModule) => boolean;
-  post: (url: string, body: unknown) => Promise<boolean>;
-  patch: (url: string, body: unknown) => Promise<boolean>;
+  can: CanFn;
+  canMod: CanModFn;
+  post: Fetcher;
+  patch: Fetcher;
+  del: Deleter;
 }) {
   const [drafts, setDrafts] = useState<Record<ShotContentType, string>>({
     HANHDONG: "",
@@ -532,23 +676,44 @@ function ShotContentSection({
     <div className="flex flex-col gap-2 mb-3">
       {CONTENT_TYPES.map(({ type, label }) => {
         const mod = SHOT_CONTENT_TYPE_TO_MODULE[type];
-        const editable = can(mod);
+        const canCreate = can(mod);
+        const visibleContents = grouped[type].filter((c) => c.active || canMod(mod, c.createdById));
         return (
           <div key={type}>
             <div className="text-xs font-semibold text-ultra-violet mb-1">{label}</div>
             <div className="flex flex-col gap-1 mb-1">
-              {grouped[type].map((c) => (
-                <textarea
-                  key={c.id}
-                  defaultValue={c.text}
-                  disabled={!editable}
-                  onBlur={(e) => e.target.value !== c.text && patch(`/api/shot-contents/${c.id}`, { text: e.target.value })}
-                  rows={1}
-                  className="text-sm"
-                />
-              ))}
+              {visibleContents.map((c) => {
+                const editable = canMod(mod, c.createdById);
+                return (
+                  <div key={c.id} className={`flex items-start gap-2 ${!c.active ? "opacity-50" : ""}`}>
+                    <textarea
+                      defaultValue={c.text}
+                      disabled={!editable}
+                      onBlur={(e) => e.target.value !== c.text && patch(`/api/shot-contents/${c.id}`, { text: e.target.value })}
+                      rows={1}
+                      className="text-sm flex-1"
+                    />
+                    {editable && (
+                      <div className="flex gap-1 text-xs shrink-0 pt-1.5">
+                        <button
+                          onClick={() => patch(`/api/shot-contents/${c.id}`, { active: !c.active })}
+                          className="text-ultra-violet hover:text-saffron underline"
+                        >
+                          {c.active ? "Ẩn" : "Hiện"}
+                        </button>
+                        <button
+                          onClick={() => confirm("Xóa dòng này?") && del(`/api/shot-contents/${c.id}`)}
+                          className="text-red-400 hover:text-red-300 underline"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            {editable && (
+            {canCreate && (
               <div className="flex gap-2">
                 <input
                   value={drafts[type]}
@@ -578,14 +743,22 @@ function ShotContentSection({
 
 function FrameSection({
   shot,
-  editable,
+  can,
+  canMod,
   post,
+  patch,
+  del,
 }: {
   shot: Shot;
-  editable: boolean;
-  post: (url: string, body: unknown) => Promise<boolean>;
+  can: CanFn;
+  canMod: CanModFn;
+  post: Fetcher;
+  patch: Fetcher;
+  del: Deleter;
 }) {
   const [url, setUrl] = useState("");
+  const canCreate = can("shot");
+  const visibleFrames = shot.frames.filter((f) => f.active || canMod("shot", f.createdById));
 
   function fileToDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -600,12 +773,35 @@ function FrameSection({
     <div>
       <div className="text-xs font-semibold text-ultra-violet mb-1">Frame (storyboard)</div>
       <div className="flex gap-2 flex-wrap mb-2">
-        {shot.frames.map((f) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img key={f.id} src={f.imageUrl} alt={`Frame ${f.order}`} className="w-24 h-16 object-cover rounded border border-ultra-violet" />
-        ))}
+        {visibleFrames.map((f) => {
+          const editable = canMod("shot", f.createdById);
+          return (
+            <div key={f.id} className={`relative ${!f.active ? "opacity-50" : ""}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={f.imageUrl} alt={`Frame ${f.order}`} className="w-24 h-16 object-cover rounded border border-ultra-violet" />
+              {editable && (
+                <div className="absolute -top-1 -right-1 flex gap-0.5">
+                  <button
+                    onClick={() => patch(`/api/frames/${f.id}`, { active: !f.active })}
+                    title={f.active ? "Ẩn" : "Hiện"}
+                    className="w-4 h-4 leading-4 text-[10px] rounded-full bg-ultra-violet"
+                  >
+                    {f.active ? "−" : "+"}
+                  </button>
+                  <button
+                    onClick={() => confirm("Xóa frame này?") && del(`/api/frames/${f.id}`)}
+                    title="Xóa"
+                    className="w-4 h-4 leading-4 text-[10px] rounded-full bg-red-500"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-      {editable && (
+      {canCreate && (
         <div className="flex gap-2 items-center">
           <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="URL ảnh..." className="flex-1 text-sm" />
           <button

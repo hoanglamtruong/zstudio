@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
       character: String(body?.character ?? ""),
       text: String(body?.text ?? ""),
       order: count + 1,
+      createdById: user.id,
+      createdByName: user.name,
     },
   });
   return NextResponse.json({ content }, { status: 201 });

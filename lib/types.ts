@@ -9,14 +9,20 @@ export type ApiUser = {
   permissions: string[];
 };
 
-export type Frame = {
+type Ownable = {
+  createdById: number;
+  createdByName: string;
+  active: boolean;
+};
+
+export type Frame = Ownable & {
   id: number;
   shotId: number;
   imageUrl: string;
   order: number;
 };
 
-export type ShotContent = {
+export type ShotContent = Ownable & {
   id: number;
   shotId: number;
   type: ShotContentType;
@@ -25,7 +31,7 @@ export type ShotContent = {
   order: number;
 };
 
-export type Shot = {
+export type Shot = Ownable & {
   id: number;
   sceneId: number;
   title: string;
@@ -36,7 +42,7 @@ export type Shot = {
   frames: Frame[];
 };
 
-export type Scene = {
+export type Scene = Ownable & {
   id: number;
   tapId: number;
   title: string;
@@ -47,7 +53,7 @@ export type Scene = {
   shots: Shot[];
 };
 
-export type Tap = {
+export type Tap = Ownable & {
   id: number;
   projectId: number;
   title: string;
@@ -59,7 +65,7 @@ export type Tap = {
   scenes: Scene[];
 };
 
-export type Character = {
+export type Character = Ownable & {
   id: number;
   projectId: number;
   name: string;

@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
       angle: String(body?.angle ?? ""),
       movement: String(body?.movement ?? ""),
       order: count + 1,
+      createdById: user.id,
+      createdByName: user.name,
     },
   });
   return NextResponse.json({ shot }, { status: 201 });
