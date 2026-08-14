@@ -36,11 +36,11 @@ async function main() {
 
   const projectCount = await prisma.project.count();
   if (projectCount === 0) {
-    const project = await prisma.project.create({
-      data: { title: "Dự án mẫu — Hành Trình" },
-    });
-
     const ownedBy = { createdById: leader.id, createdByName: leader.name };
+
+    const project = await prisma.project.create({
+      data: { title: "Dự án mẫu — Hành Trình", ...ownedBy },
+    });
 
     await prisma.character.createMany({
       data: [

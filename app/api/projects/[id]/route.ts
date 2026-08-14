@@ -51,3 +51,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const project = await prisma.project.update({ where: { id: Number(id) }, data });
   return NextResponse.json({ project });
 }
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
+
+  const { id } = await params;
+  const project = await prisma.project.findUnique({ where: { id: Number(id) } });
+  if (!project) return NextResponse.json({ error: "Không tìm thấy dự án" }, { status: 404 });
+
+  if (!user.isLeader && user.id !== project.createdById) {
+    return NextResponse.json({ error: "Bạn không có quyền xóa dự án này" }, { status: 403 });
+  }
+
+  await prisma.project.delete({ where: { id: Number(id) } });
+  return NextResponse.json({ ok: true });
+}

@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Project = { id: number; title: string; createdAt: string };
+type Project = { id: number; title: string; createdAt: string; createdById: number };
+type ListUser = { id: number; isLeader: boolean };
 
-export default function ProjectList() {
+export default function ProjectList({ user }: { user: ListUser }) {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [title, setTitle] = useState("");
@@ -34,6 +35,16 @@ export default function ProjectList() {
     }
   }
 
+  async function deleteProject(p: Project) {
+    if (!confirm(`Xóa dự án "${p.title}"? Toàn bộ Tập/Cảnh/Shot bên trong sẽ bị xóa vĩnh viễn.`)) return;
+    const res = await fetch(`/api/projects/${p.id}`, { method: "DELETE" });
+    if (res.ok) load();
+    else {
+      const data = await res.json().catch(() => null);
+      alert(data?.error ?? "Xóa dự án thất bại");
+    }
+  }
+
   return (
     <main className="flex-1 px-6 py-8 max-w-3xl mx-auto w-full">
       <h1 className="text-2xl font-bold text-saffron mb-6">Dự án của bạn</h1>
@@ -57,16 +68,32 @@ export default function ProjectList() {
       {loading && <p className="opacity-70 text-sm">Đang tải...</p>}
 
       <div className="flex flex-col gap-2">
-        {projects.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => router.push(`/project/${p.id}`)}
-            className="text-left px-4 py-3 rounded-lg bg-dark-green hover:bg-ultra-violet transition-colors"
-          >
-            <div className="font-medium text-saffron">{p.title}</div>
-            <div className="text-xs opacity-60">{new Date(p.createdAt).toLocaleString("vi-VN")}</div>
-          </button>
-        ))}
+        {projects.map((p) => {
+          const canDelete = user.isLeader || user.id === p.createdById;
+          return (
+            <div
+              key={p.id}
+              className="flex items-center gap-2 rounded-lg bg-dark-green hover:bg-ultra-violet transition-colors"
+            >
+              <button
+                onClick={() => router.push(`/project/${p.id}`)}
+                className="flex-1 text-left px-4 py-3"
+              >
+                <div className="font-medium text-saffron">{p.title}</div>
+                <div className="text-xs opacity-60">{new Date(p.createdAt).toLocaleString("vi-VN")}</div>
+              </button>
+              {canDelete && (
+                <button
+                  onClick={() => deleteProject(p)}
+                  title="Xóa dự án"
+                  className="px-3 py-3 text-sm text-red-400 hover:text-red-300"
+                >
+                  Xóa
+                </button>
+              )}
+            </div>
+          );
+        })}
         {!loading && projects.length === 0 && (
           <p className="opacity-70 text-sm">Chưa có dự án nào. Tạo dự án đầu tiên ở trên.</p>
         )}

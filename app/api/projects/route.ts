@@ -15,6 +15,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const title = String(body?.title ?? "").trim();
   if (!title) return NextResponse.json({ error: "Thiếu tên dự án" }, { status: 400 });
-  const project = await prisma.project.create({ data: { title } });
+  const project = await prisma.project.create({
+    data: { title, createdById: user.id, createdByName: user.name },
+  });
   return NextResponse.json({ project }, { status: 201 });
 }

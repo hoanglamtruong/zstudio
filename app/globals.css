@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --z-saffron: #f8c662;
-  --z-ultra-violet: #595082;
-  --z-dark-purple: #2c263f;
-  --z-hunter-green: #41644a;
-  --z-dark-green: #213722;
+  --z-saffron: #ffb454;
+  --z-ultra-violet: #4c9aff;
+  --z-dark-purple: #12141c;
+  --z-hunter-green: #2f9e8f;
+  --z-dark-green: #1a2530;
 
   --background: var(--z-dark-purple);
   --foreground: var(--z-saffron);
