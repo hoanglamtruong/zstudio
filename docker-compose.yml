@@ -1,0 +1,17 @@
+services:
+  zstudio:
+    build: .
+    image: zstudio-app:latest
+    container_name: zstudio
+    ports:
+      - "8104:3000"
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
+    networks:
+      - homelab-net
+    restart: unless-stopped
+
+networks:
+  homelab-net:
+    external: true

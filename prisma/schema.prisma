@@ -29,6 +29,7 @@ model User {
   name        String
   isLeader    Boolean  @default(false)
   permissions String[] @default([])
+  active      Boolean  @default(true)
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@map("users")

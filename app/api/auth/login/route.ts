@@ -6,6 +6,7 @@ import { getSession } from "@/lib/session";
 // permissions/isLeader, khác với GET /api/users (leader only, đầy đủ dữ liệu).
 export async function GET() {
   const users = await prisma.user.findMany({
+    where: { active: true },
     select: { id: true, name: true },
     orderBy: { id: "asc" },
   });
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) {
+  if (!user || !user.active) {
     return NextResponse.json({ error: "Không tìm thấy user" }, { status: 404 });
   }
 
