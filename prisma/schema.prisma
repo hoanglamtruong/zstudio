@@ -38,12 +38,14 @@ model User {
 }
 
 model Project {
-  id         Int         @id @default(autoincrement())
-  title      String
-  mainPlot   String      @default("") @map("main_plot")
-  createdAt  DateTime    @default(now()) @map("created_at")
-  characters Character[]
-  taps       Tap[]
+  id            Int         @id @default(autoincrement())
+  title         String
+  mainPlot      String      @default("") @map("main_plot")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  createdById   Int         @map("created_by_id")
+  createdByName String      @map("created_by_name")
+  characters    Character[]
+  taps          Tap[]
 
   @@map("projects")
 }

@@ -77,6 +77,8 @@ export type Project = {
   title: string;
   mainPlot: string;
   createdAt: string;
+  createdById: number;
+  createdByName: string;
   characters: Character[];
   taps: Tap[];
 };

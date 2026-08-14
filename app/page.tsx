@@ -10,7 +10,7 @@ export default async function HomePage() {
   return (
     <>
       <Nav user={user} />
-      <ProjectList />
+      <ProjectList user={user} />
     </>
   );
 }
