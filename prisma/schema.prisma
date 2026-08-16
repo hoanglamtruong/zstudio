@@ -24,14 +24,26 @@ enum ShotContentType {
   ANHSANG
 }
 
+// MANAGER: full quyền, kể cả quản lý user (thêm/sửa/xóa/ẩn user khác).
+// ADMIN: full quyền nội dung, KHÔNG được quản lý user khác.
+// STAFF: quyền theo từng module trong `permissions`, chỉ sửa được nội dung
+// do chính mình tạo.
+enum Role {
+  MANAGER
+  ADMIN
+  STAFF
+}
+
 model User {
   id          Int      @id @default(autoincrement())
   username    String   @unique
   password    String
   name        String
-  isLeader    Boolean  @default(false)
+  role        Role     @default(STAFF)
   permissions String[] @default([])
   active      Boolean  @default(true)
+  // Tài khoản tự đăng ký (Admin/Staff) chờ Manager duyệt mới đăng nhập được.
+  approved    Boolean  @default(true)
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@map("users")

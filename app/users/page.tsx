@@ -6,7 +6,7 @@ import UserManagement from "@/components/UserManagement";
 export default async function UsersPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (!user.isLeader) redirect("/");
+  if (user.role !== "MANAGER") redirect("/");
 
   return (
     <>

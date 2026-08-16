@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { hasFullAccess } from "@/lib/permissions";
 
-// Thêm Tập là thao tác cấu trúc: chỉ leader được thêm (theo spec), khác với
-// sửa nội dung Tập (PATCH) vốn chỉ cần quyền 'tapinfo'.
+// Thêm Tập là thao tác cấu trúc: chỉ Manager/Admin được thêm (theo spec),
+// khác với sửa nội dung Tập (PATCH) vốn chỉ cần quyền 'tapinfo'.
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
-  if (!user.isLeader) {
-    return NextResponse.json({ error: "Chỉ leader mới thêm Tập được" }, { status: 403 });
+  if (!hasFullAccess(user)) {
+    return NextResponse.json({ error: "Chỉ Manager/Admin mới thêm Tập được" }, { status: 403 });
   }
   const body = await req.json().catch(() => null);
   const projectId = Number(body?.projectId);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { canModify, hasPermission, PermissionModule, SHOT_CONTENT_TYPE_TO_MODULE } from "@/lib/permissions";
+import { canModify, hasFullAccess, hasPermission, PermissionModule, SHOT_CONTENT_TYPE_TO_MODULE } from "@/lib/permissions";
 import { ApiUser, Character, CommentTarget, Project, Scene, Shot, ShotContent, ShotContentType, Tap } from "@/lib/types";
 import CommentModal from "./CommentModal";
 import CameraPickerModal from "./CameraPickerModal";
@@ -358,7 +358,8 @@ function TapSection({
   openCamera: (s: Shot) => void;
 }) {
   const [title, setTitle] = useState("");
-  const visibleTaps = project.taps.filter((t) => t.active || user.isLeader);
+  const fullAccess = hasFullAccess(user);
+  const visibleTaps = project.taps.filter((t) => t.active || fullAccess);
 
   return (
     <div>
@@ -370,7 +371,7 @@ function TapSection({
             tap={tap}
             can={can}
             canMod={canMod}
-            isLeader={user.isLeader}
+            fullAccess={fullAccess}
             post={post}
             patch={patch}
             del={del}
@@ -379,7 +380,7 @@ function TapSection({
           />
         ))}
       </div>
-      {user.isLeader && (
+      {fullAccess && (
         <div className="flex gap-2 mt-4">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tên Tập mới..." className="flex-1" />
           <button
@@ -389,7 +390,7 @@ function TapSection({
             }}
             className="px-3 py-1 rounded-md bg-saffron text-dark-purple font-semibold text-sm"
           >
-            + Tập (Leader)
+            + Tập (Manager/Admin)
           </button>
         </div>
       )}
@@ -401,7 +402,7 @@ function TapItem({
   tap,
   can,
   canMod,
-  isLeader,
+  fullAccess,
   post,
   patch,
   del,
@@ -411,7 +412,7 @@ function TapItem({
   tap: Tap;
   can: CanFn;
   canMod: CanModFn;
-  isLeader: boolean;
+  fullAccess: boolean;
   post: Fetcher;
   patch: Fetcher;
   del: Deleter;
@@ -435,10 +436,10 @@ function TapItem({
             title="Tên Tập"
           />
         </div>
-        {/* Ẩn/Xóa Tập là thao tác cấu trúc: chỉ leader (giống add Tập). */}
+        {/* Ẩn/Xóa Tập là thao tác cấu trúc: chỉ Manager/Admin (giống add Tập). */}
         <ItemActions
           active={tap.active}
-          canMod={isLeader}
+          canMod={fullAccess}
           confirmLabel={tap.title}
           onComment={() => openComment({ type: "TAP", id: tap.id, label: tap.title })}
           onToggleActive={() => patch(`/api/taps/${tap.id}`, { active: !tap.active })}

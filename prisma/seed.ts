@@ -17,8 +17,9 @@ async function main() {
       username: "lam",
       password: await hashPassword(LEADER_PASSWORD),
       name: "Đạo diễn Lam",
-      isLeader: true,
+      role: "MANAGER",
       permissions: [],
+      approved: true,
     },
   });
 
@@ -29,8 +30,9 @@ async function main() {
       username: "an",
       password: await hashPassword(STAFF_PASSWORD),
       name: "Biên kịch An",
-      isLeader: false,
+      role: "STAFF",
       permissions: ["nhanvat", "tapinfo", "thoai"],
+      approved: true,
     },
   });
 

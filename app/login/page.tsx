@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,6 +63,11 @@ export default function LoginPage() {
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </div>
+        <p className="text-center text-xs mt-4">
+          <Link href="/register" className="text-ultra-violet hover:text-saffron underline">
+            Chưa có tài khoản? Đăng ký
+          </Link>
+        </p>
       </form>
     </main>
   );

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasFullAccess, hasPermission } from "@/lib/permissions";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -18,10 +18,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (Array.isArray(body?.equipment)) data.equipment = body.equipment;
   if (Array.isArray(body?.costumes)) data.costumes = body.costumes;
 
-  // Ẩn/hiện Tập là thao tác cấu trúc: chỉ leader (giống add/delete Tập).
+  // Ẩn/hiện Tập là thao tác cấu trúc: chỉ Manager/Admin (giống add/delete Tập).
   if (typeof body?.active === "boolean") {
-    if (!user.isLeader) {
-      return NextResponse.json({ error: "Chỉ leader mới ẩn/hiện Tập được" }, { status: 403 });
+    if (!hasFullAccess(user)) {
+      return NextResponse.json({ error: "Chỉ Manager/Admin mới ẩn/hiện Tập được" }, { status: 403 });
     }
     data.active = body.active;
   }
@@ -33,8 +33,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
-  if (!user.isLeader) {
-    return NextResponse.json({ error: "Chỉ leader mới xóa Tập được" }, { status: 403 });
+  if (!hasFullAccess(user)) {
+    return NextResponse.json({ error: "Chỉ Manager/Admin mới xóa Tập được" }, { status: 403 });
   }
   const { id } = await params;
   await prisma.tap.delete({ where: { id: Number(id) } });

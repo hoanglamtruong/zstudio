@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasFullAccess, hasPermission } from "@/lib/permissions";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -60,7 +60,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const project = await prisma.project.findUnique({ where: { id: Number(id) } });
   if (!project) return NextResponse.json({ error: "Không tìm thấy dự án" }, { status: 404 });
 
-  if (!user.isLeader && user.id !== project.createdById) {
+  if (!hasFullAccess(user) && user.id !== project.createdById) {
     return NextResponse.json({ error: "Bạn không có quyền xóa dự án này" }, { status: 403 });
   }
 

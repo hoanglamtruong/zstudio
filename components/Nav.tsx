@@ -4,8 +4,15 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PwaInstall from "./PwaInstall";
+import { Role } from "@/lib/types";
 
-type NavUser = { id: number; name: string; isLeader: boolean };
+type NavUser = { id: number; name: string; role: Role };
+
+const ROLE_LABELS: Record<Role, string> = {
+  MANAGER: "Manager",
+  ADMIN: "Admin",
+  STAFF: "Staff",
+};
 type NavProject = { id: number; title: string };
 
 export default function Nav({ user }: { user: NavUser }) {
@@ -81,11 +88,13 @@ export default function Nav({ user }: { user: NavUser }) {
         <PwaInstall />
         <span className="text-saffron">
           {user.name}
-          {user.isLeader && (
-            <span className="ml-2 px-2 py-0.5 rounded bg-ultra-violet text-xs align-middle">Leader</span>
+          {user.role !== "STAFF" && (
+            <span className="ml-2 px-2 py-0.5 rounded bg-ultra-violet text-xs align-middle">
+              {ROLE_LABELS[user.role]}
+            </span>
           )}
         </span>
-        {user.isLeader && (
+        {user.role === "MANAGER" && (
           <Link href="/users" className="text-ultra-violet hover:text-saffron underline">
             Quản lý user
           </Link>

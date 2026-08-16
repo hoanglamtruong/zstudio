@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { hasFullAccess } from "@/lib/permissions";
+import { Role } from "@/lib/types";
 
 type Project = { id: number; title: string; createdAt: string; createdById: number };
-type ListUser = { id: number; isLeader: boolean };
+type ListUser = { id: number; role: Role };
 
 export default function ProjectList({ user }: { user: ListUser }) {
   const router = useRouter();
@@ -69,7 +71,7 @@ export default function ProjectList({ user }: { user: ListUser }) {
 
       <div className="flex flex-col gap-2">
         {projects.map((p) => {
-          const canDelete = user.isLeader || user.id === p.createdById;
+          const canDelete = hasFullAccess(user) || user.id === p.createdById;
           return (
             <div
               key={p.id}

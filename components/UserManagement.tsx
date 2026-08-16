@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { PERMISSION_MODULES, PermissionModule } from "@/lib/permissions";
+import { Role } from "@/lib/types";
 
 type ApiUser = {
   id: number;
   username: string;
   name: string;
-  isLeader: boolean;
+  role: Role;
   permissions: string[];
   active: boolean;
+  approved: boolean;
 };
 
 const MODULE_LABELS: Record<PermissionModule, string> = {
@@ -23,12 +25,56 @@ const MODULE_LABELS: Record<PermissionModule, string> = {
   anhsang: "Ánh sáng",
 };
 
+const ROLE_LABELS: Record<Role, string> = {
+  MANAGER: "Manager",
+  ADMIN: "Admin",
+  STAFF: "Staff",
+};
+
+function PendingUserRow({
+  user: u,
+  onApprove,
+  onReject,
+}: {
+  user: ApiUser;
+  onApprove: (u: ApiUser, role: Role) => void;
+  onReject: (u: ApiUser) => void;
+}) {
+  const [role, setRole] = useState<Role>("STAFF");
+
+  return (
+    <div className="bg-dark-green rounded-lg p-4 border border-ultra-violet">
+      <div className="mb-2">
+        <div className="font-medium text-saffron">{u.name}</div>
+        <div className="text-xs opacity-60">Đăng nhập: {u.username}</div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs opacity-70">Duyệt với vai trò:</span>
+        <select value={role} onChange={(e) => setRole(e.target.value as Role)} className="text-xs">
+          <option value="STAFF">Staff</option>
+          <option value="ADMIN">Admin</option>
+        </select>
+        <button
+          onClick={() => onApprove(u, role)}
+          className="px-3 py-1 rounded-md bg-saffron text-dark-purple font-semibold text-xs"
+        >
+          Duyệt
+        </button>
+        <button onClick={() => onReject(u)} className="text-red-400 hover:text-red-300 underline text-xs">
+          Từ chối
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function UserManagement() {
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [newRole, setNewRole] = useState<Role>("STAFF");
   const [error, setError] = useState("");
 
   function load() {
@@ -40,6 +86,20 @@ export default function UserManagement() {
 
   useEffect(load, []);
 
+  async function patchUser(u: ApiUser, body: Record<string, unknown>) {
+    setError("");
+    const res = await fetch(`/api/users/${u.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? "Thao tác thất bại");
+    }
+    load();
+  }
+
   async function createUser() {
     if (!name.trim() || !username.trim() || password.length < 6) {
       setError("Điền đủ tên, tên đăng nhập và mật khẩu (từ 6 ký tự)");
@@ -49,7 +109,7 @@ export default function UserManagement() {
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, username, password, permissions: [] }),
+      body: JSON.stringify({ name, username, password, role: newRole, permissions: [] }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -59,6 +119,23 @@ export default function UserManagement() {
     setName("");
     setUsername("");
     setPassword("");
+    setNewRole("STAFF");
+    load();
+  }
+
+  async function approveUser(u: ApiUser, role: Role) {
+    await patchUser(u, { approved: true, role });
+  }
+
+  async function rejectUser(u: ApiUser) {
+    if (!confirm(`Từ chối đăng ký của "${u.name}"? Tài khoản sẽ bị xóa.`)) return;
+    setError("");
+    const res = await fetch(`/api/users/${u.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? "Thao tác thất bại");
+      return;
+    }
     load();
   }
 
@@ -76,17 +153,7 @@ export default function UserManagement() {
   async function renameUser(u: ApiUser, newName: string) {
     const n = newName.trim();
     if (!n || n === u.name) return;
-    setError("");
-    const res = await fetch(`/api/users/${u.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: n }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Sửa tên thất bại");
-    }
-    load();
+    await patchUser(u, { name: n });
   }
 
   async function resetPassword(u: ApiUser) {
@@ -107,18 +174,11 @@ export default function UserManagement() {
   }
 
   async function toggleActive(u: ApiUser) {
-    setError("");
-    const res = await fetch(`/api/users/${u.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: !u.active }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Thao tác thất bại");
-      return;
-    }
-    load();
+    await patchUser(u, { active: !u.active });
+  }
+
+  async function changeRole(u: ApiUser, role: Role) {
+    await patchUser(u, { role });
   }
 
   async function deleteUser(u: ApiUser) {
@@ -133,11 +193,29 @@ export default function UserManagement() {
     load();
   }
 
+  const pending = users.filter((u) => !u.approved);
+  const approved = users.filter((u) => u.approved);
+
   return (
     <main className="flex-1 px-6 py-8 max-w-3xl mx-auto w-full">
       <h1 className="text-2xl font-bold text-saffron mb-6">Quản lý User &amp; Phân quyền</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+      {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
+      {loading && <p className="opacity-70 text-sm">Đang tải...</p>}
+
+      {pending.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-saffron mb-2">Chờ duyệt ({pending.length})</h2>
+          <div className="flex flex-col gap-3">
+            {pending.map((u) => (
+              <PendingUserRow key={u.id} user={u} onApprove={approveUser} onReject={rejectUser} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <h2 className="text-lg font-semibold text-saffron mb-2">Tạo user mới</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-2">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên hiển thị..." />
         <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Tên đăng nhập..." />
         <input
@@ -146,18 +224,21 @@ export default function UserManagement() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Mật khẩu (≥6 ký tự)..."
         />
+        <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
+          <option value="STAFF">Staff</option>
+          <option value="ADMIN">Admin</option>
+          <option value="MANAGER">Manager</option>
+        </select>
       </div>
       <div className="mb-6">
         <button onClick={createUser} className="px-4 py-2 rounded-md bg-saffron text-dark-purple font-semibold">
           + Thêm user
         </button>
       </div>
-      {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
 
-      {loading && <p className="opacity-70 text-sm">Đang tải...</p>}
-
+      <h2 className="text-lg font-semibold text-saffron mb-2">Danh sách user</h2>
       <div className="flex flex-col gap-4">
-        {users.map((u) => (
+        {approved.map((u) => (
           <div key={u.id} className={`bg-dark-green rounded-lg p-4 ${!u.active ? "opacity-50" : ""}`}>
             <div className="flex items-center gap-2 mb-1">
               <input
@@ -166,7 +247,15 @@ export default function UserManagement() {
                 onBlur={(e) => renameUser(u, e.target.value)}
                 className="font-medium flex-1"
               />
-              {u.isLeader && <span className="px-2 py-0.5 rounded bg-ultra-violet text-xs shrink-0">Leader</span>}
+              <select
+                value={u.role}
+                onChange={(e) => changeRole(u, e.target.value as Role)}
+                className="text-xs shrink-0"
+              >
+                <option value="MANAGER">Manager</option>
+                <option value="ADMIN">Admin</option>
+                <option value="STAFF">Staff</option>
+              </select>
               {!u.active && <span className="px-2 py-0.5 rounded bg-dark-purple text-xs shrink-0">Đã ẩn</span>}
             </div>
             <div className="flex items-center gap-3 mb-3 text-xs">
@@ -181,8 +270,11 @@ export default function UserManagement() {
                 Xóa
               </button>
             </div>
-            {u.isLeader ? (
-              <p className="text-xs opacity-60">Leader có toàn quyền, không cần gán riêng.</p>
+            {u.role !== "STAFF" ? (
+              <p className="text-xs opacity-60">
+                {ROLE_LABELS[u.role]} có toàn quyền nội dung
+                {u.role === "ADMIN" ? ", trừ quản lý user khác." : ", kể cả quản lý user."}
+              </p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {PERMISSION_MODULES.map((m) => (
