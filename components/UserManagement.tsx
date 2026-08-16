@@ -197,7 +197,7 @@ export default function UserManagement() {
   const approved = users.filter((u) => u.approved);
 
   return (
-    <main className="flex-1 px-6 py-8 max-w-3xl mx-auto w-full">
+    <main className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-3xl mx-auto w-full">
       <h1 className="text-2xl font-bold text-saffron mb-6">Quản lý User &amp; Phân quyền</h1>
 
       {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
@@ -240,12 +240,12 @@ export default function UserManagement() {
       <div className="flex flex-col gap-4">
         {approved.map((u) => (
           <div key={u.id} className={`bg-dark-green rounded-lg p-4 ${!u.active ? "opacity-50" : ""}`}>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center flex-wrap gap-2 mb-1">
               <input
                 defaultValue={u.name}
                 key={u.name}
                 onBlur={(e) => renameUser(u, e.target.value)}
-                className="font-medium flex-1"
+                className="font-medium flex-1 min-w-0"
               />
               <select
                 value={u.role}
@@ -258,7 +258,7 @@ export default function UserManagement() {
               </select>
               {!u.active && <span className="px-2 py-0.5 rounded bg-dark-purple text-xs shrink-0">Đã ẩn</span>}
             </div>
-            <div className="flex items-center gap-3 mb-3 text-xs">
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-1.5 mb-3 text-xs">
               <span className="opacity-60">Đăng nhập: {u.username}</span>
               <button onClick={() => resetPassword(u)} className="text-ultra-violet hover:text-saffron underline">
                 Đổi mật khẩu

@@ -144,7 +144,7 @@ export default function ProjectEditor({ projectId, user }: { projectId: number; 
   const canMod: CanModFn = (m, createdById) => canModify(user, m, createdById);
 
   return (
-    <main className="flex-1 px-6 py-6 max-w-4xl mx-auto w-full">
+    <main className="flex-1 px-4 sm:px-6 py-6 max-w-4xl mx-auto w-full min-w-0">
       <h1 className="text-2xl font-bold text-saffron mb-1">{project.title}</h1>
 
       <div className="flex gap-2 my-4 border-b border-ultra-violet">
@@ -318,7 +318,7 @@ function CharacterSection({
       </div>
       {canCreate && (
         <div className="flex gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên nhân vật mới..." className="flex-1" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên nhân vật mới..." className="flex-1 min-w-0" />
           <button
             onClick={async () => {
               if (!name.trim()) return;
@@ -382,7 +382,7 @@ function TapSection({
       </div>
       {fullAccess && (
         <div className="flex gap-2 mt-4">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tên Tập mới..." className="flex-1" />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tên Tập mới..." className="flex-1 min-w-0" />
           <button
             onClick={async () => {
               if (!title.trim()) return;
@@ -493,7 +493,7 @@ function TapItem({
 
       {can("canh") && (
         <div className="flex gap-2 mt-3">
-          <input value={sceneTitle} onChange={(e) => setSceneTitle(e.target.value)} placeholder="Tên Cảnh mới..." className="flex-1 text-sm" />
+          <input value={sceneTitle} onChange={(e) => setSceneTitle(e.target.value)} placeholder="Tên Cảnh mới..." className="flex-1 min-w-0 text-sm" />
           <button
             onClick={async () => {
               if (!sceneTitle.trim()) return;
@@ -594,7 +594,7 @@ function SceneItem({
 
       {can("shot") && (
         <div className="flex gap-2 mt-3">
-          <input value={shotTitle} onChange={(e) => setShotTitle(e.target.value)} placeholder="Tên Shot mới..." className="flex-1 text-sm" />
+          <input value={shotTitle} onChange={(e) => setShotTitle(e.target.value)} placeholder="Tên Shot mới..." className="flex-1 min-w-0 text-sm" />
           <button
             onClick={async () => {
               if (!shotTitle.trim()) return;
@@ -749,7 +749,7 @@ function ShotContentSection({
                   value={drafts[type]}
                   onChange={(e) => setDrafts((d) => ({ ...d, [type]: e.target.value }))}
                   placeholder={`Thêm ${label.toLowerCase()}...`}
-                  className="flex-1 text-sm"
+                  className="flex-1 min-w-0 text-sm"
                 />
                 <button
                   onClick={async () => {
@@ -833,7 +833,7 @@ function FrameSection({
       </div>
       {canCreate && (
         <div className="flex gap-2 items-center">
-          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="URL ảnh..." className="flex-1 text-sm" />
+          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="URL ảnh..." className="flex-1 min-w-0 text-sm" />
           <button
             onClick={async () => {
               if (!url.trim()) return;

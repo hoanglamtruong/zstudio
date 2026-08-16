@@ -48,7 +48,7 @@ export default function ProjectList({ user }: { user: ListUser }) {
   }
 
   return (
-    <main className="flex-1 px-6 py-8 max-w-3xl mx-auto w-full">
+    <main className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-3xl mx-auto w-full">
       <h1 className="text-2xl font-bold text-saffron mb-6">Dự án của bạn</h1>
 
       <div className="flex gap-2 mb-6">
@@ -56,7 +56,7 @@ export default function ProjectList({ user }: { user: ListUser }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Tên dự án mới..."
-          className="flex-1"
+          className="flex-1 min-w-0"
           onKeyDown={(e) => e.key === "Enter" && createProject()}
         />
         <button
