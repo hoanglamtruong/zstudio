@@ -10,6 +10,7 @@ type NavUser = { id: number; name: string; role: Role };
 
 const ROLE_LABELS: Record<Role, string> = {
   MANAGER: "Manager",
+  ASSISTANT: "Assistant",
   ADMIN: "Admin",
   STAFF: "Staff",
 };
@@ -99,7 +100,7 @@ export default function Nav({ user }: { user: NavUser }) {
             </span>
           )}
         </span>
-        {user.role === "MANAGER" && (
+        {user.role !== "STAFF" && (
           <Link href="/users" className="text-ultra-violet hover:text-saffron underline shrink-0">
             Quản lý user
           </Link>

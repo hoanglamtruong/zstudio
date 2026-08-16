@@ -16,13 +16,29 @@ export type PermissionModule = (typeof PERMISSION_MODULES)[number];
 export type PermissionUser = { id: number; role: Role; permissions: string[] };
 
 // Manager và Admin có toàn quyền trên nội dung sản xuất (Project/Tập/Cảnh/...).
-// Khác biệt duy nhất giữa hai role này là quản lý user (xem isManager bên dưới).
+// Assistant KHÔNG có quyền này — vai trò của Assistant chỉ xoay quanh quản lý
+// tài khoản user, không đụng vào nội dung project.
 export function hasFullAccess(user: { role: Role } | null | undefined): boolean {
   return user?.role === "MANAGER" || user?.role === "ADMIN";
 }
 
-// Chỉ Manager mới được thêm/sửa/xóa/ẩn user khác — Admin bị loại trừ quyền này.
-export function isManager(user: { role: Role } | null | undefined): boolean {
+// Quản lý tài khoản user (duyệt đăng ký, đổi tên, reset mật khẩu, ẩn/xóa,
+// đổi role của user khác): Manager và Assistant.
+export function canManageUsers(user: { role: Role } | null | undefined): boolean {
+  return user?.role === "MANAGER" || user?.role === "ASSISTANT";
+}
+
+// Gán quyền module (nhanvat/tapinfo/canh/shot/...) cho từng Staff — tức
+// quyết định Staff nào được sửa phần nào trong project: Manager và Admin
+// (người hiểu cấu trúc project), không phải Assistant.
+export function canAssignStaffPermissions(user: { role: Role } | null | undefined): boolean {
+  return user?.role === "MANAGER" || user?.role === "ADMIN";
+}
+
+// Chỉ có duy nhất 1 Manager trong hệ thống — không role nào được gán role
+// này qua ứng dụng, và tài khoản Manager không thể bị sửa qua API quản lý
+// user (đổi tên/mật khẩu/role/ẩn/xóa).
+export function isProtectedManager(user: { role: Role } | null | undefined): boolean {
   return user?.role === "MANAGER";
 }
 

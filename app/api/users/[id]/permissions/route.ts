@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { PERMISSION_MODULES, isManager } from "@/lib/permissions";
+import { PERMISSION_MODULES, canAssignStaffPermissions } from "@/lib/permissions";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const currentUser = await getCurrentUser();
-  if (!isManager(currentUser)) {
-    return NextResponse.json({ error: "Chỉ Manager mới gán quyền được" }, { status: 403 });
+  if (!canAssignStaffPermissions(currentUser)) {
+    return NextResponse.json({ error: "Chỉ Manager/Admin mới gán quyền được" }, { status: 403 });
   }
   const { id } = await params;
   const body = await req.json().catch(() => null);

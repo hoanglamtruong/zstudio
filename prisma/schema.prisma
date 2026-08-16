@@ -24,12 +24,19 @@ enum ShotContentType {
   ANHSANG
 }
 
-// MANAGER: full quyền, kể cả quản lý user (thêm/sửa/xóa/ẩn user khác).
-// ADMIN: full quyền nội dung, KHÔNG được quản lý user khác.
-// STAFF: quyền theo từng module trong `permissions`, chỉ sửa được nội dung
-// do chính mình tạo.
+// MANAGER: full quyền (nội dung + tài khoản user + gán quyền module). Duy
+// nhất 1 người, không thể gán role này cho ai khác qua ứng dụng, và tài
+// khoản Manager không thể bị sửa/ẩn/xóa qua các API quản lý user.
+// ASSISTANT: quản lý tài khoản user (duyệt đăng ký, đổi tên, reset mật
+// khẩu, ẩn/xóa, đổi role Assistant/Admin/Staff) — KHÔNG có quyền trên
+// nội dung project, KHÔNG gán quyền module cho Staff.
+// ADMIN: full quyền nội dung project (Project/Tập/Cảnh/Shot...) và là
+// người gán quyền module cho từng Staff — KHÔNG quản lý tài khoản user.
+// STAFF: quyền theo từng module trong `permissions` (do Manager/Admin gán),
+// chỉ sửa được nội dung do chính mình tạo.
 enum Role {
   MANAGER
+  ASSISTANT
   ADMIN
   STAFF
 }

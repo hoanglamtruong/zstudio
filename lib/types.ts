@@ -1,6 +1,6 @@
 export type CommentTarget = "CHARACTER" | "TAP" | "SCENE" | "SHOT";
 export type ShotContentType = "HANHDONG" | "THOAI" | "AMTHANH" | "ANHSANG";
-export type Role = "MANAGER" | "ADMIN" | "STAFF";
+export type Role = "MANAGER" | "ASSISTANT" | "ADMIN" | "STAFF";
 
 export type ApiUser = {
   id: number;

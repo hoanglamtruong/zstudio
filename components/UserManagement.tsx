@@ -27,9 +27,13 @@ const MODULE_LABELS: Record<PermissionModule, string> = {
 
 const ROLE_LABELS: Record<Role, string> = {
   MANAGER: "Manager",
+  ASSISTANT: "Assistant",
   ADMIN: "Admin",
   STAFF: "Staff",
 };
+
+// Manager không gán được qua UI — chỉ có đúng 1 Manager trong hệ thống.
+const ASSIGNABLE_ROLES: Role[] = ["ASSISTANT", "ADMIN", "STAFF"];
 
 function PendingUserRow({
   user: u,
@@ -53,6 +57,7 @@ function PendingUserRow({
         <select value={role} onChange={(e) => setRole(e.target.value as Role)} className="text-xs">
           <option value="STAFF">Staff</option>
           <option value="ADMIN">Admin</option>
+          <option value="ASSISTANT">Assistant</option>
         </select>
         <button
           onClick={() => onApprove(u, role)}
@@ -68,7 +73,13 @@ function PendingUserRow({
   );
 }
 
-export default function UserManagement() {
+export default function UserManagement({
+  canManageAccounts,
+  canAssignPermissions,
+}: {
+  canManageAccounts: boolean;
+  canAssignPermissions: boolean;
+}) {
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -193,8 +204,10 @@ export default function UserManagement() {
     load();
   }
 
-  const pending = users.filter((u) => !u.approved);
-  const approved = users.filter((u) => u.approved);
+  const nonManager = users.filter((u) => u.role !== "MANAGER");
+  const pending = nonManager.filter((u) => !u.approved);
+  const approved = nonManager.filter((u) => u.approved);
+  const staffOnly = approved.filter((u) => u.role === "STAFF");
 
   return (
     <main className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-3xl mx-auto w-full">
@@ -203,97 +216,119 @@ export default function UserManagement() {
       {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
       {loading && <p className="opacity-70 text-sm">Đang tải...</p>}
 
-      {pending.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-saffron mb-2">Chờ duyệt ({pending.length})</h2>
-          <div className="flex flex-col gap-3">
-            {pending.map((u) => (
-              <PendingUserRow key={u.id} user={u} onApprove={approveUser} onReject={rejectUser} />
-            ))}
-          </div>
-        </div>
-      )}
+      {canManageAccounts && (
+        <>
+          {pending.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold text-saffron mb-2">Chờ duyệt ({pending.length})</h2>
+              <div className="flex flex-col gap-3">
+                {pending.map((u) => (
+                  <PendingUserRow key={u.id} user={u} onApprove={approveUser} onReject={rejectUser} />
+                ))}
+              </div>
+            </div>
+          )}
 
-      <h2 className="text-lg font-semibold text-saffron mb-2">Tạo user mới</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên hiển thị..." />
-        <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Tên đăng nhập..." />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Mật khẩu (≥6 ký tự)..."
-        />
-        <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
-          <option value="STAFF">Staff</option>
-          <option value="ADMIN">Admin</option>
-          <option value="MANAGER">Manager</option>
-        </select>
-      </div>
-      <div className="mb-6">
-        <button onClick={createUser} className="px-4 py-2 rounded-md bg-saffron text-dark-purple font-semibold">
-          + Thêm user
-        </button>
-      </div>
+          <h2 className="text-lg font-semibold text-saffron mb-2">Tạo user mới</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-2">
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên hiển thị..." />
+            <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Tên đăng nhập..." />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mật khẩu (≥6 ký tự)..."
+            />
+            <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
+              {ASSIGNABLE_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABELS[r]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mb-6">
+            <button onClick={createUser} className="px-4 py-2 rounded-md bg-saffron text-dark-purple font-semibold">
+              + Thêm user
+            </button>
+          </div>
+        </>
+      )}
 
       <h2 className="text-lg font-semibold text-saffron mb-2">Danh sách user</h2>
       <div className="flex flex-col gap-4">
-        {approved.map((u) => (
+        {(canManageAccounts ? approved : staffOnly).map((u) => (
           <div key={u.id} className={`bg-dark-green rounded-lg p-4 ${!u.active ? "opacity-50" : ""}`}>
             <div className="flex items-center flex-wrap gap-2 mb-1">
-              <input
-                defaultValue={u.name}
-                key={u.name}
-                onBlur={(e) => renameUser(u, e.target.value)}
-                className="font-medium flex-1 min-w-0"
-              />
-              <select
-                value={u.role}
-                onChange={(e) => changeRole(u, e.target.value as Role)}
-                className="text-xs shrink-0"
-              >
-                <option value="MANAGER">Manager</option>
-                <option value="ADMIN">Admin</option>
-                <option value="STAFF">Staff</option>
-              </select>
+              {canManageAccounts ? (
+                <input
+                  defaultValue={u.name}
+                  key={u.name}
+                  onBlur={(e) => renameUser(u, e.target.value)}
+                  className="font-medium flex-1 min-w-0"
+                />
+              ) : (
+                <span className="font-medium flex-1 min-w-0">{u.name}</span>
+              )}
+              {canManageAccounts ? (
+                <select
+                  value={u.role}
+                  onChange={(e) => changeRole(u, e.target.value as Role)}
+                  className="text-xs shrink-0"
+                >
+                  {ASSIGNABLE_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="px-2 py-0.5 rounded bg-ultra-violet text-xs shrink-0">{ROLE_LABELS[u.role]}</span>
+              )}
               {!u.active && <span className="px-2 py-0.5 rounded bg-dark-purple text-xs shrink-0">Đã ẩn</span>}
             </div>
-            <div className="flex items-center flex-wrap gap-x-3 gap-y-1.5 mb-3 text-xs">
-              <span className="opacity-60">Đăng nhập: {u.username}</span>
-              <button onClick={() => resetPassword(u)} className="text-ultra-violet hover:text-saffron underline">
-                Đổi mật khẩu
-              </button>
-              <button onClick={() => toggleActive(u)} className="text-ultra-violet hover:text-saffron underline">
-                {u.active ? "Ẩn" : "Hiện lại"}
-              </button>
-              <button onClick={() => deleteUser(u)} className="text-red-400 hover:text-red-300 underline">
-                Xóa
-              </button>
-            </div>
-            {u.role !== "STAFF" ? (
-              <p className="text-xs opacity-60">
-                {ROLE_LABELS[u.role]} có toàn quyền nội dung
-                {u.role === "ADMIN" ? ", trừ quản lý user khác." : ", kể cả quản lý user."}
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {PERMISSION_MODULES.map((m) => (
-                  <label
-                    key={m}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-dark-purple text-xs cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={u.permissions.includes(m)}
-                      onChange={() => togglePermission(u, m)}
-                    />
-                    {MODULE_LABELS[m]}
-                  </label>
-                ))}
+
+            {canManageAccounts && (
+              <div className="flex items-center flex-wrap gap-x-3 gap-y-1.5 mb-3 text-xs">
+                <span className="opacity-60">Đăng nhập: {u.username}</span>
+                <button onClick={() => resetPassword(u)} className="text-ultra-violet hover:text-saffron underline">
+                  Đổi mật khẩu
+                </button>
+                <button onClick={() => toggleActive(u)} className="text-ultra-violet hover:text-saffron underline">
+                  {u.active ? "Ẩn" : "Hiện lại"}
+                </button>
+                <button onClick={() => deleteUser(u)} className="text-red-400 hover:text-red-300 underline">
+                  Xóa
+                </button>
               </div>
             )}
+
+            {canAssignPermissions ? (
+              u.role === "STAFF" ? (
+                <div className="flex flex-wrap gap-2">
+                  {PERMISSION_MODULES.map((m) => (
+                    <label
+                      key={m}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-dark-purple text-xs cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={u.permissions.includes(m)}
+                        onChange={() => togglePermission(u, m)}
+                      />
+                      {MODULE_LABELS[m]}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs opacity-60">{ROLE_LABELS[u.role]} có toàn quyền nội dung, không cần gán riêng.</p>
+              )
+            ) : null}
           </div>
         ))}
+        {!loading && (canManageAccounts ? approved : staffOnly).length === 0 && (
+          <p className="opacity-70 text-sm">Chưa có user nào.</p>
+        )}
       </div>
     </main>
   );
